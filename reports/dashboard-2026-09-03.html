@@ -1,0 +1,542 @@
+<title>台股產業趨勢看板</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@700;900&family=Noto+Sans+TC:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root{
+    --page:#eef0ea;
+    --surface:#fbfbf7;
+    --surface-2:#f3f3ee;
+    --ink:#181917;
+    --ink-2:#54544c;
+    --muted:#8a8879;
+    --hairline:#dcdbd0;
+    --brand:#1c3f52;
+    --brand-ink:#eaf1f4;
+    --up:#b93327;
+    --up-soft:#f4e3df;
+    --down:#1c7a46;
+    --down-soft:#dfeee2;
+    --flat:#8a8879;
+    --chip-limit-bg:#b93327;
+    --chip-limit-ink:#fff3ef;
+    --shadow: 0 1px 0 rgba(24,25,23,0.04), 0 8px 24px -18px rgba(24,25,23,0.35);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --page:#111311;
+      --surface:#181a17;
+      --surface-2:#1f221e;
+      --ink:#f3f2ec;
+      --ink-2:#c2c0b3;
+      --muted:#8d8b7d;
+      --hairline:#31332d;
+      --brand:#8fb9cc;
+      --brand-ink:#0d1f27;
+      --up:#e2604f;
+      --up-soft:#3a2521;
+      --down:#49c07f;
+      --down-soft:#183527;
+      --flat:#8d8b7d;
+      --chip-limit-bg:#e2604f;
+      --chip-limit-ink:#241210;
+      --shadow: 0 1px 0 rgba(0,0,0,0.4), 0 8px 24px -18px rgba(0,0,0,0.8);
+    }
+  }
+  :root[data-theme="dark"]{
+    --page:#111311;
+    --surface:#181a17;
+    --surface-2:#1f221e;
+    --ink:#f3f2ec;
+    --ink-2:#c2c0b3;
+    --muted:#8d8b7d;
+    --hairline:#31332d;
+    --brand:#8fb9cc;
+    --brand-ink:#0d1f27;
+    --up:#e2604f;
+    --up-soft:#3a2521;
+    --down:#49c07f;
+    --down-soft:#183527;
+    --flat:#8d8b7d;
+    --chip-limit-bg:#e2604f;
+    --chip-limit-ink:#241210;
+    --shadow: 0 1px 0 rgba(0,0,0,0.4), 0 8px 24px -18px rgba(0,0,0,0.8);
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--page);
+    color:var(--ink);
+    font-family:"Noto Sans TC","Noto Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:20px 20px 64px;}
+
+  /* ---------- masthead ---------- */
+  .masthead{
+    background:var(--brand);
+    color:var(--brand-ink);
+    border-radius:14px;
+    padding:28px 28px 24px;
+    box-shadow:var(--shadow);
+  }
+  .masthead-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    flex-wrap:wrap;
+    gap:8px 16px;
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:12.5px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    opacity:.82;
+    border-bottom:1px solid rgba(234,241,244,0.25);
+    padding-bottom:14px;
+    margin-bottom:18px;
+  }
+  .masthead h1{
+    font-family:"Noto Serif TC",serif;
+    font-weight:900;
+    font-size:clamp(22px,4.2vw,34px);
+    line-height:1.42;
+    margin:0;
+    text-wrap:balance;
+  }
+  .week-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    margin-top:16px;
+    padding:5px 12px;
+    border-radius:999px;
+    background:rgba(234,241,244,0.14);
+    border:1px solid rgba(234,241,244,0.3);
+    font-size:12.5px;
+  }
+
+  /* ---------- kpi strip ---------- */
+  .kpis{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:12px;
+    margin-top:16px;
+  }
+  .kpi{
+    background:var(--surface);
+    border:1px solid var(--hairline);
+    border-radius:12px;
+    padding:14px 16px;
+    box-shadow:var(--shadow);
+  }
+  .kpi .label{
+    font-size:12px;
+    color:var(--muted);
+    letter-spacing:.04em;
+  }
+  .kpi .value{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-weight:600;
+    font-size:20px;
+    margin-top:4px;
+    font-variant-numeric:tabular-nums;
+  }
+  .kpi .value.up{color:var(--up);}
+  .kpi .value.down{color:var(--down);}
+  .kpi .sub{font-size:12px;color:var(--ink-2);margin-top:2px;}
+
+  @media (max-width:720px){
+    .kpis{grid-template-columns:repeat(2,1fr);}
+  }
+
+  /* ---------- section shell ---------- */
+  section{margin-top:34px;}
+  .section-head{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:14px;
+    flex-wrap:wrap;
+  }
+  .eyebrow{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:11.5px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--brand);
+    font-weight:600;
+  }
+  .section-head h2{
+    font-family:"Noto Serif TC",serif;
+    font-size:20px;
+    margin:2px 0 0;
+  }
+  .section-note{font-size:12.5px;color:var(--muted);max-width:34ch;text-align:right;}
+  @media (max-width:640px){ .section-note{text-align:left;max-width:none;} }
+
+  /* ---------- diverging bar chart ---------- */
+  .chart-card{
+    background:var(--surface);
+    border:1px solid var(--hairline);
+    border-radius:14px;
+    padding:20px 20px 8px;
+    box-shadow:var(--shadow);
+    overflow-x:auto;
+  }
+  .chart-legend{
+    display:flex;
+    gap:18px;
+    flex-wrap:wrap;
+    font-size:12.5px;
+    color:var(--ink-2);
+    padding-bottom:14px;
+    margin-bottom:10px;
+    border-bottom:1px solid var(--hairline);
+  }
+  .chart-legend span{display:inline-flex;align-items:center;gap:6px;}
+  .swatch{width:10px;height:10px;border-radius:3px;display:inline-block;}
+  .swatch.up{background:var(--up);}
+  .swatch.down{background:var(--down);}
+
+  .bar-row{
+    display:grid;
+    grid-template-columns:190px 1fr 92px;
+    align-items:center;
+    gap:10px;
+    padding:7px 0;
+    min-width:600px;
+  }
+  .bar-row + .bar-row{border-top:1px dashed var(--hairline);}
+  .bar-name{
+    font-size:13px;
+    font-weight:500;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+  .bar-name .sector-tag{font-size:11px;color:var(--muted);font-weight:400;}
+  .bar-track{
+    position:relative;
+    height:22px;
+    background:linear-gradient(to right, var(--surface-2) 0 50%, var(--surface-2) 50% 100%);
+    border-radius:5px;
+  }
+  .bar-track::after{
+    content:"";
+    position:absolute;
+    left:50%;top:-4px;bottom:-4px;
+    width:1px;
+    background:var(--hairline);
+  }
+  .bar-fill{
+    position:absolute;
+    top:2px;bottom:2px;
+    border-radius:4px;
+    transition:width .5s ease;
+  }
+  .bar-fill.up{background:var(--up);left:50%;}
+  .bar-fill.down{background:var(--down);right:50%;}
+  .bar-fill.watch{outline:2px solid var(--brand);outline-offset:1px;}
+  .bar-pct{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:13px;
+    font-weight:600;
+    text-align:right;
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+  }
+  .bar-pct.up{color:var(--up);}
+  .bar-pct.down{color:var(--down);}
+  .limit-chip{
+    display:inline-block;
+    font-size:10px;
+    padding:1px 5px;
+    border-radius:4px;
+    background:var(--chip-limit-bg);
+    color:var(--chip-limit-ink);
+    margin-left:5px;
+    vertical-align:1px;
+  }
+  .watch-star{color:var(--brand);font-weight:700;}
+
+  [data-tip]{cursor:help;position:relative;}
+  [data-tip]:hover::before,[data-tip]:focus-visible::before{
+    content:attr(data-tip);
+    position:absolute;
+    bottom:calc(100% + 8px);
+    left:0;
+    background:var(--ink);
+    color:var(--page);
+    padding:6px 9px;
+    border-radius:6px;
+    font-size:12px;
+    line-height:1.4;
+    width:max-content;
+    max-width:260px;
+    box-shadow:var(--shadow);
+    z-index:5;
+  }
+  :root[data-theme="dark"] [data-tip]:hover::before,
+  :root:not([data-theme="light"]) [data-tip]:hover::before{
+    background:var(--surface-2);
+    color:var(--ink);
+    border:1px solid var(--hairline);
+  }
+  @media (prefers-color-scheme:light){
+    [data-tip]:hover::before{ background:var(--ink); color:var(--page); }
+  }
+
+  /* ---------- sector cards ---------- */
+  .sector-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+  }
+  @media (max-width:820px){ .sector-grid{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:520px){ .sector-grid{grid-template-columns:1fr;} }
+
+  .sector-card{
+    background:var(--surface);
+    border:1px solid var(--hairline);
+    border-radius:12px;
+    padding:14px 16px;
+    box-shadow:var(--shadow);
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .sector-card .top{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .sector-card .name{font-weight:700;font-size:14.5px;}
+  .badge{
+    font-size:11px;
+    font-weight:600;
+    padding:3px 9px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .badge.strong{background:var(--up-soft);color:var(--up);}
+  .badge.weak{background:var(--down-soft);color:var(--down);}
+  .badge.mixed{background:var(--surface-2);color:var(--ink-2);border:1px solid var(--hairline);}
+  .sector-card .desc{font-size:13px;color:var(--ink-2);}
+  .sector-card.highlight{border-color:var(--up);}
+  .sector-card.lowlight{border-color:var(--down);}
+
+  /* ---------- watchlist ---------- */
+  .watch-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:12px;
+  }
+  @media (max-width:640px){ .watch-grid{grid-template-columns:1fr;} }
+  .watch-card{
+    background:var(--surface);
+    border:1px solid var(--hairline);
+    border-left:4px solid var(--brand);
+    border-radius:10px;
+    padding:14px 16px;
+    box-shadow:var(--shadow);
+  }
+  .watch-card .ticker{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-size:12px;
+    color:var(--brand);
+    font-weight:600;
+  }
+  .watch-card h3{margin:2px 0 6px;font-size:15px;}
+  .watch-card p{margin:0;font-size:13px;color:var(--ink-2);}
+  .mini-arc{width:100%;height:36px;margin:8px 0 4px;display:block;}
+
+  /* ---------- footer ---------- */
+  footer{
+    margin-top:40px;
+    padding-top:18px;
+    border-top:1px solid var(--hairline);
+    font-size:12px;
+    color:var(--muted);
+  }
+  footer a{color:var(--brand);}
+  footer .limits{margin:10px 0;padding-left:18px;}
+  footer .limits li{margin-bottom:4px;}
+
+  @media (prefers-reduced-motion: reduce){
+    .bar-fill{transition:none;}
+  }
+</style>
+
+<div class="wrap">
+
+  <div class="masthead">
+    <div class="masthead-top">
+      <span>台股產業趨勢看板</span>
+      <span>2026-08-31 ～ 09-03・週一至週四</span>
+    </div>
+    <h1>四天雲霄飛車：金融股逆勢抗跌成本週壓艙石，PCB電路板、記憶體週四又挨一記重摔。</h1>
+    <span class="week-chip">📅 本週資料涵蓋週一至週四四天・完整一週待週五更新</span>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi">
+      <div class="label">加權指數（週四收盤）</div>
+      <div class="value down">45,857.66</div>
+      <div class="sub">▼ 本週累計約 -473 點（-1.02%）</div>
+    </div>
+    <div class="kpi">
+      <div class="label">最強產業</div>
+      <div class="value up">金融（金控股）</div>
+      <div class="sub">多天抗跌逆漲，獲利年增136%撐盤</div>
+    </div>
+    <div class="kpi">
+      <div class="label">最弱產業</div>
+      <div class="value down">半導體／PCB／記憶體</div>
+      <div class="sub">週三、週四連兩天挨打</div>
+    </div>
+    <div class="kpi">
+      <div class="label">週四單日</div>
+      <div class="value down">-307.06 點</div>
+      <div class="sub">早盤漲300點，尾盤翻黑，-0.67%</div>
+    </div>
+  </div>
+
+  <section>
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Sector Movers</div>
+        <h2>本週產業代表股／指數漲跌幅</h2>
+      </div>
+      <div class="section-note">台股慣例：紅色代表上漲、綠色代表下跌。以下為週一至週四代表性表現，由左到右依漲跌幅排序，★為觀察清單持股。</div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-legend">
+        <span><i class="swatch up"></i>上漲（紅）</span>
+        <span><i class="swatch down"></i>下跌（綠）</span>
+        <span>★＝觀察清單持股</span>
+      </div>
+      <div id="chart"></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Sector Overview</div>
+        <h2>各產業本週表現與白話解讀</h2>
+      </div>
+    </div>
+    <div class="sector-grid" id="sector-grid"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div>
+        <div class="eyebrow">Watchlist</div>
+        <h2>觀察清單標的觀察</h2>
+      </div>
+    </div>
+    <div class="watch-grid">
+      <div class="watch-card">
+        <div class="ticker">2330・半導體個股</div>
+        <h3>台積電</h3>
+        <p>這週走勢曲折——週一小跌、週二反彈1.46%收2,440元、週三因美股ADR前一晚重挫跌破2,410元；週四則逆勢收紅（股價落在2,385～2,396元區間），在PCB、記憶體全面重摔的當下，台積電本身守得比這些「小老弟」股票穩，是這波電子股賣壓中相對抗跌的權值指標股。</p>
+      </div>
+      <div class="watch-card">
+        <div class="ticker">00631L／00663L／00685L・大盤槓桿 ETF（正2）</div>
+        <h3>正2 ETF 三兄弟</h3>
+        <svg class="mini-arc" viewBox="0 0 300 36" preserveAspectRatio="none" aria-hidden="true">
+          <line x1="0" y1="18" x2="300" y2="18" stroke="var(--hairline)" stroke-width="1"/>
+          <path d="M0,18 C25,20 40,23 60,23 C90,22 110,4 140,3 C165,2 180,25 205,30 C225,33 240,29 260,30 C275,31 290,32 300,32" fill="none" stroke="var(--down)" stroke-width="2.5"/>
+          <circle cx="300" cy="32" r="3.5" fill="var(--down)"/>
+        </svg>
+        <p>跟著大盤兩倍幅度波動：週一大盤跌0.44%，理論放大約-0.9%；週二大盤漲1.78%，理論放大約+3.5%；週三大盤跌1.67%，理論放大約-3.3%；週四大盤跌0.67%，理論放大約-1.3%。四天算下來是「小跌、大漲、大跌、再跌」的連續震盪，波動明顯比大盤本身更劇烈。示意圖為推估幅度，非實際淨值精確數字。</p>
+      </div>
+      <div class="watch-card">
+        <div class="ticker">00981A・主動式台股 ETF</div>
+        <h3>統一台股增長</h3>
+        <p>先前持股高度集中在半導體與電子供應鏈，本週電子股走弱時表現可能承壓；但基金經理人近期已開始調節，首度買進航運股慧洋（2637）並減碼部分電子股，等於提早卡位本週回溫的航運族群。本週表現可能同時受「電子股拖累」與「航運股加分」兩股力量拉扯。</p>
+      </div>
+      <div class="watch-card">
+        <div class="ticker">資料限制</div>
+        <h3>看不到的部分，誠實說</h3>
+        <p>塑化股週四當天、航運股週一到週三的精確漲跌數字未查得；正2 ETF、00981A、台積電週四收盤價為新聞區間推估，非逐筆對帳精確數字；本頁不編造查不到的數字。</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <strong>資料來源：</strong>
+    <a href="https://tw.stock.yahoo.com/news/%E5%8F%B0%E8%82%A1%E6%AE%BA%E5%B0%BE%E7%9B%A4%E6%94%B6%E8%B7%8C307%E9%BB%9E-pcb%E9%87%8D%E7%81%BD%E5%8D%80-%E9%87%91%E8%9E%8D%E9%80%86%E5%8B%A2%E6%92%90%E7%9B%A4-061000413.html" target="_blank" rel="noopener">Yahoo股市－台股殺尾盤收跌307點</a>・
+    <a href="https://news.cnyes.com/news/id/6596276" target="_blank" rel="noopener">鉅亨網－尾盤急挫失守4萬6</a>・
+    <a href="https://newtalk.tw/news/view/2026-09-03/1057665" target="_blank" rel="noopener">Newtalk新聞－金融股逆勢創高</a>・
+    <a href="https://udn.com/news/story/7251/9612952" target="_blank" rel="noopener">聯合新聞網－PCB、ABF成重災區</a>・
+    <a href="https://m.cnyes.com/news/id/6413023" target="_blank" rel="noopener">鉅亨網－九月開門紅漲逾600點</a>・
+    <a href="https://udn.com/news/story/123006/9709812" target="_blank" rel="noopener">聯合新聞網－00981A買進慧洋</a>
+
+    <ul class="limits">
+      <li>本頁「本週」僅涵蓋週一（8/31）至週四（9/3）四個交易日，尚非完整一週。</li>
+      <li>加權指數本週累計漲跌為推算值（上週五收盤約46,331點 → 本週四收盤45,857.66點），非新聞直接報導的週漲跌數字。</li>
+      <li>正2 ETF 漲跌幅為根據大盤走勢推估的示意呈現，非實際淨值數字。</li>
+      <li>塑化股週四當天、航運股週一到週三精確漲跌未查得公開數據，本頁未編造數字。</li>
+    </ul>
+    產出時間：2026-09-03（依當日盤後可查得之公開新聞整理）
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  var data = [
+    {name:'國泰金', sector:'金融（週四逆勢，觀察清單ETF正2追蹤標的相關）', pct:3.21, tip:'國泰金：週四大盤翻黑收跌307點時，逆勢上漲3.21%'},
+    {name:'裕民', sector:'航運（週四）', pct:4.13, tip:'裕民：週四上漲4.13%，貨櫃、散裝航運股同步走強'},
+    {name:'富邦金', sector:'金融（週四逆勢）', pct:2.44, tip:'富邦金：週四逆勢上漲2.44%'},
+    {name:'加權指數', sector:'大盤（週二單日）', pct:1.78, tip:'加權指數：週二「九月開門紅」單日大漲820.25點，+1.78%，聯發科獲輝達認購可轉債利多帶動'},
+    {name:'中信金', sector:'金融（週四逆勢）', pct:1.35, tip:'中信金：週四逆勢上漲1.35%'},
+    {name:'長榮', sector:'航運（週四）', pct:1.92, tip:'長榮：週四上漲1.92%，收239.0元'},
+    {name:'台積電', sector:'半導體（觀察清單，週四）', pct:0.21, tip:'台積電：週四逆勢小漲約0.21%，在PCB、記憶體重摔的當下相對抗跌', watch:true},
+    {name:'加權指數', sector:'大盤（本週累計，週一至週四）', pct:-1.02, tip:'加權指數：本週四天累計約下跌473點，約-1.02%'},
+    {name:'加權指數', sector:'大盤（週四單日，尾盤翻黑）', pct:-0.67, tip:'加權指數：週四早盤一度大漲近300點，尾盤急殺翻黑，收跌307.06點'},
+    {name:'健鼎', sector:'PCB電路板（週四重災區）', pct:-5.0, tip:'健鼎：週四PCB類股重挫，下跌約5%'},
+    {name:'金像電', sector:'PCB電路板（週四重災區）', pct:-6.0, tip:'金像電：週四下跌約6%'},
+    {name:'南亞科／華新科', sector:'記憶體／被動元件（週四）', pct:-7.0, tip:'南亞科、華新科等記憶體、被動元件股：週四同步下殺約7%'},
+    {name:'欣興', sector:'PCB電路板（週四重災區）', pct:-8.0, tip:'欣興：週四PCB重災區，大跌約8%'}
+  ];
+  data.sort(function(a,b){ return b.pct - a.pct; });
+  var max = 10;
+  var chart = document.getElementById('chart');
+  data.forEach(function(d){
+    var row = document.createElement('div');
+    row.className = 'bar-row';
+    var isUp = d.pct >= 0;
+    var w = Math.min(100, Math.abs(d.pct)/max*100);
+    row.innerHTML =
+      '<div class="bar-name"><span>'+d.name+(d.watch?' <span class="watch-star">★</span>':'')+'</span><span class="sector-tag">'+d.sector+'</span></div>'+
+      '<div class="bar-track" data-tip="'+d.tip+'" tabindex="0">'+
+        '<div class="bar-fill '+(isUp?'up':'down')+(d.watch?' watch':'')+'" style="width:0%"></div>'+
+      '</div>'+
+      '<div class="bar-pct '+(isUp?'up':'down')+'">'+(isUp?'▲ +':'▼ ')+d.pct.toFixed(1)+'%</div>';
+    chart.appendChild(row);
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        row.querySelector('.bar-fill').style.width = w+'%';
+      });
+    });
+  });
+
+  var sectors = [
+    {name:'金融（金控股）', badge:'strong', label:'本週最強', text:'週一、週二抗跌又續漲，週三隨大盤走弱，週四再度逆勢站回——國泰金+3.21%、富邦金+2.44%、中信金+1.35%，13家金控上半年獲利年增136%撐住買盤，成了本週股市的壓艙石。', hl:'highlight'},
+    {name:'半導體／電子（含PCB、記憶體）', badge:'weak', label:'本週最弱', text:'週三先被台積電ADR重挫、美伊避險賣壓拖累；週四PCB、ABF載板又成重災區，欣興跌8%、金像電跌6%、健鼎跌5%，記憶體、被動元件跌約7%，一週挨打兩次。', hl:'lowlight'},
+    {name:'塑化／傳產', badge:'mixed', label:'前段強、後段未知', text:'週一、週三兩度亮燈漲停，資金一度視為避風港；但週四（9/3）當天具體漲跌數字未查得，暫不編數字。'},
+    {name:'航運', badge:'mixed', label:'週四回溫', text:'週四長榮漲1.92%、裕民漲4.13%，貨櫃、散裝航運股同步走強；但週一到週三數字未查得，無法完整評估本週表現。'},
+    {name:'生技', badge:'weak', label:'偏弱', text:'近5個交易日下跌約2.94%，同期間加權指數卻上漲約3.05%，資金明顯沒有青睞生技股。'}
+  ];
+  var grid = document.getElementById('sector-grid');
+  sectors.forEach(function(s){
+    var card = document.createElement('div');
+    card.className = 'sector-card'+(s.hl?' '+s.hl:'');
+    card.innerHTML =
+      '<div class="top"><span class="name">'+s.name+'</span><span class="badge '+s.badge+'">'+s.label+'</span></div>'+
+      '<div class="desc">'+s.text+'</div>';
+    grid.appendChild(card);
+  });
+})();
+</script>
