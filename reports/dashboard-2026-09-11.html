@@ -1,0 +1,452 @@
+<title>台股產業趨勢儀表板</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC&family=Noto+Sans+TC:wght@400;500;600;700;900&display=swap">
+<style>
+  :root{
+    color-scheme: light;
+    --surface-page:   #f9f9f7;
+    --surface-card:   #fcfcfb;
+    --surface-card-2: #f3f2ee;
+    --ink-primary:    #0b0b0b;
+    --ink-secondary:  #52514e;
+    --ink-muted:      #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --up-red:         #e34948;
+    --down-green:     #008300;
+    --accent-gold:    #a8730a;
+    --accent-gold-wash: rgba(168,115,10,0.10);
+    --hero-bg:        #14130f;
+    --hero-bg-2:      #1d1b16;
+    --hero-ink:       #f5f4ef;
+    --hero-ink-dim:   rgba(245,244,239,0.66);
+    --shadow: 0 1px 2px rgba(11,11,11,0.04), 0 8px 24px -12px rgba(11,11,11,0.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme: dark;
+      --surface-page:   #0d0d0d;
+      --surface-card:   #1a1a19;
+      --surface-card-2: #201f1c;
+      --ink-primary:    #ffffff;
+      --ink-secondary:  #c3c2b7;
+      --ink-muted:      #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --up-red:         #e66767;
+      --down-green:     #008300;
+      --accent-gold:    #d9a441;
+      --accent-gold-wash: rgba(217,164,65,0.14);
+      --hero-bg:        #201d18;
+      --hero-bg-2:      #17150f;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.55);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --surface-page:   #0d0d0d;
+    --surface-card:   #1a1a19;
+    --surface-card-2: #201f1c;
+    --ink-primary:    #ffffff;
+    --ink-secondary:  #c3c2b7;
+    --ink-muted:      #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --up-red:         #e66767;
+    --down-green:     #008300;
+    --accent-gold:    #d9a441;
+    --accent-gold-wash: rgba(217,164,65,0.14);
+    --hero-bg:        #201d18;
+    --hero-bg-2:      #17150f;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.55);
+  }
+
+  *{ box-sizing:border-box; }
+  html{ text-size-adjust:100%; }
+  body{
+    margin:0;
+    background:var(--surface-page);
+    color:var(--ink-primary);
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .display{ font-family:"LXGW WenKai TC","Noto Sans TC",serif; }
+  .tnum{ font-variant-numeric:tabular-nums; }
+
+  .page{ max-width:960px; margin:0 auto; padding-inline:20px; }
+  @media (min-width:640px){ .page{ padding-inline:32px; } }
+
+  /* ---------- Hero ---------- */
+  .hero{
+    background:
+      radial-gradient(120% 160% at 8% -20%, var(--hero-bg-2), transparent 55%),
+      var(--hero-bg);
+    color:var(--hero-ink);
+    margin-inline:calc(-1 * max(20px,(100vw - 960px)/2));
+    padding:40px 20px 32px;
+    border-bottom:1px solid var(--border);
+  }
+  @media (min-width:640px){ .hero{ padding:56px 32px 40px; } }
+  .hero-inner{ max-width:960px; margin:0 auto; }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:12.5px; font-weight:700; letter-spacing:.14em;
+    color:var(--accent-gold); text-transform:uppercase;
+    margin:0 0 14px;
+  }
+  .eyebrow::before{
+    content:""; width:18px; height:1.5px; background:var(--accent-gold);
+  }
+  .hero h1{
+    font-family:"LXGW WenKai TC","Noto Sans TC",serif;
+    font-weight:400;
+    font-size:clamp(1.55rem, 1.15rem + 1.8vw, 2.5rem);
+    line-height:1.42;
+    margin:0 0 14px;
+    text-wrap:balance;
+    max-width:30ch;
+  }
+  .hero p{
+    font-size:15.5px; line-height:1.85; color:var(--hero-ink-dim);
+    margin:0 0 28px; max-width:56ch;
+  }
+  .hero-stats{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
+    gap:1px; background:rgba(245,244,239,0.12);
+    border:1px solid rgba(245,244,239,0.14); border-radius:14px; overflow:hidden;
+  }
+  .hstat{ background:rgba(20,19,15,0.55); padding:16px 18px; }
+  .hstat .hs-label{ font-size:12px; color:var(--hero-ink-dim); margin-bottom:8px; }
+  .hstat .hs-value{ font-size:22px; font-weight:700; display:flex; align-items:baseline; gap:6px; }
+  .hstat .hs-value .arrow{ font-size:15px; }
+  .hstat .hs-sub{ font-size:12.5px; color:var(--hero-ink-dim); margin-top:4px; }
+  .up{ color:var(--up-red); }
+  .down{ color:var(--down-green); }
+
+  /* ---------- Sections ---------- */
+  main{ padding-block:36px 8px; display:flex; flex-direction:column; gap:28px; }
+  section.card{
+    background:var(--surface-card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:22px 20px;
+    box-shadow:var(--shadow);
+  }
+  @media (min-width:640px){ section.card{ padding:28px 30px; } }
+
+  .section-head{ margin-bottom:18px; }
+  .section-eyebrow{
+    font-size:12px; font-weight:700; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--accent-gold); margin:0 0 6px;
+  }
+  h2.section-title{
+    font-family:"LXGW WenKai TC","Noto Sans TC",serif; font-weight:400;
+    font-size:20px; margin:0 0 8px; color:var(--ink-primary);
+  }
+  .section-desc{ font-size:14px; line-height:1.75; color:var(--ink-secondary); margin:0; max-width:60ch; }
+
+  /* legend */
+  .legend{ display:flex; flex-wrap:wrap; gap:14px; margin:14px 0 20px; }
+  .legend-item{ display:flex; align-items:center; gap:6px; font-size:12.5px; color:var(--ink-secondary); }
+  .legend-swatch{ width:12px; height:12px; border-radius:3px; flex:none; }
+
+  /* ---------- Diverging ordinal chart ---------- */
+  .bar-list{ display:flex; flex-direction:column; gap:16px; }
+  .bar-row{ display:grid; grid-template-columns:1fr; gap:6px; }
+  @media (min-width:600px){
+    .bar-row{ grid-template-columns:132px 1fr; align-items:center; gap:14px; }
+  }
+  .bar-label{ font-size:13.5px; font-weight:600; color:var(--ink-primary); }
+  .bar-track{
+    position:relative; height:34px;
+    background:
+      linear-gradient(to right, transparent calc(50% - 0.5px), var(--baseline) calc(50% - 0.5px), var(--baseline) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+  }
+  .bar-fill{
+    position:absolute; top:6px; height:22px; border-radius:5px;
+    display:flex; align-items:center;
+    font-size:12px; font-weight:700; white-space:nowrap;
+  }
+  .bar-fill.pos{ left:50%; background:var(--up-red); color:#fff; justify-content:flex-start; padding-left:8px; border-radius:4px 8px 8px 4px; }
+  .bar-fill.neg{ right:50%; background:var(--down-green); color:#fff; justify-content:flex-end; padding-right:8px; border-radius:8px 4px 4px 8px; }
+  .bar-tag{ font-size:11.5px; color:var(--ink-muted); margin-top:2px; }
+  .scale-ticks{
+    display:none; grid-template-columns:132px 1fr; margin-top:2px;
+  }
+  @media (min-width:600px){ .scale-ticks{ display:grid; } }
+  .scale-ticks .ticks-row{ display:flex; justify-content:space-between; font-size:10.5px; color:var(--ink-muted); padding-top:4px; border-top:1px solid var(--gridline); }
+
+  .chart-note{ font-size:12.5px; color:var(--ink-muted); line-height:1.7; margin:18px 0 0; padding-top:14px; border-top:1px solid var(--gridline); }
+
+  /* ---------- Precise friday chart ---------- */
+  .pbar-list{ display:flex; flex-direction:column; gap:14px; }
+  .pbar-row{ display:grid; grid-template-columns:1fr; gap:6px; }
+  @media (min-width:600px){ .pbar-row{ grid-template-columns:118px 1fr 72px; align-items:center; gap:12px; } }
+  .pbar-label{ font-size:13px; font-weight:600; }
+  .pbar-track{ position:relative; height:22px; background:var(--surface-card-2); border-radius:5px; overflow:hidden; }
+  .pbar-track::after{ content:""; position:absolute; left:50%; top:0; bottom:0; width:1px; background:var(--baseline); }
+  .pbar-fill{ position:absolute; top:2px; bottom:2px; border-radius:4px; }
+  .pbar-fill.pos{ left:50%; background:var(--up-red); }
+  .pbar-fill.neg{ right:50%; background:var(--down-green); }
+  .pbar-value{ font-size:13px; font-weight:700; text-align:right; }
+  .pbar-value.up{ color:var(--up-red); }
+  .pbar-value.down{ color:var(--down-green); }
+
+  /* ---------- Strongest / weakest ---------- */
+  .sw-grid{ display:grid; grid-template-columns:1fr; gap:16px; }
+  @media (min-width:640px){ .sw-grid{ grid-template-columns:1fr 1fr; } }
+  .sw-card{ border-radius:14px; padding:20px; border:1px solid var(--border); background:var(--surface-card-2); }
+  .sw-kicker{ display:flex; align-items:center; gap:8px; font-size:12px; font-weight:700; letter-spacing:.08em; margin-bottom:10px; }
+  .sw-card.strongest .sw-kicker{ color:var(--up-red); }
+  .sw-card.weakest .sw-kicker{ color:var(--down-green); }
+  .sw-title{ font-family:"LXGW WenKai TC","Noto Sans TC",serif; font-size:18px; font-weight:400; margin:0 0 10px; }
+  .sw-card p{ font-size:13.5px; line-height:1.8; color:var(--ink-secondary); margin:0; }
+
+  /* ---------- Watchlist ---------- */
+  .wl-groups{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:4px; }
+  .wl-chip{
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--surface-card-2); border:1px solid var(--border);
+    border-radius:999px; padding:6px 12px; font-size:12.5px; color:var(--ink-secondary);
+  }
+  .wl-chip b{ color:var(--ink-primary); font-weight:700; }
+
+  .cards-grid{ display:grid; grid-template-columns:1fr; gap:14px; margin-top:16px; }
+  @media (min-width:640px){ .cards-grid{ grid-template-columns:repeat(3,1fr); } }
+  .wcard{
+    border:1px solid var(--border); border-radius:14px; padding:18px;
+    background:var(--surface-card-2); display:flex; flex-direction:column; gap:10px;
+  }
+  .wcard-head{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+  .wcard-code{ font-size:12px; font-weight:700; color:var(--accent-gold); letter-spacing:.04em; }
+  .wcard-name{ font-family:"LXGW WenKai TC","Noto Sans TC",serif; font-size:16px; }
+  .wcard-metric{ display:flex; align-items:baseline; gap:8px; }
+  .wcard-metric .m-val{ font-size:19px; font-weight:700; }
+  .wcard-metric .m-sub{ font-size:12px; color:var(--ink-muted); }
+  .wcard p{ font-size:12.5px; line-height:1.7; color:var(--ink-secondary); margin:0; }
+  .pill{ align-self:flex-start; font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; }
+  .pill.up{ background:color-mix(in srgb, var(--up-red) 16%, transparent); color:var(--up-red); }
+  .pill.down{ background:color-mix(in srgb, var(--down-green) 14%, transparent); color:var(--down-green); }
+  .pill.flat{ background:var(--accent-gold-wash); color:var(--accent-gold); }
+
+  /* ---------- Footer ---------- */
+  footer{
+    margin-top:8px; padding:24px 0 40px; border-top:1px solid var(--gridline);
+    font-size:12px; line-height:1.85; color:var(--ink-muted);
+  }
+  footer h3{ font-size:12px; color:var(--ink-secondary); margin:0 0 8px; font-weight:700; }
+  footer ul{ margin:0 0 16px; padding-left:18px; }
+  footer a{ color:var(--ink-secondary); }
+  footer .src-list{ display:flex; flex-direction:column; gap:4px; margin:0 0 18px; padding:0; list-style:none; }
+  footer .stamp{ color:var(--ink-muted); }
+</style>
+
+<div class="page">
+  <header class="hero">
+    <div class="hero-inner">
+      <p class="eyebrow">本週一句話 · 2026-09-11（週五）</p>
+      <h1>電子退燒、金融航運撐盤——台股週線連二黑，僅金融、航運逆勢收紅</h1>
+      <p>半導體、電子這些「科技權值股」這週被國際美債殖利率飆高、油價上漲的消息嚇到重摔，尤其今天（週五）加權指數單日重摔755點；反倒是金融股與航運股這兩個「傳產老將」相對抗跌，是全台股19大類股裡本週僅有收紅（上漲）的兩個族群。</p>
+      <div class="hero-stats">
+        <div class="hstat">
+          <div class="hs-label">本週週線（9/7～9/11）</div>
+          <div class="hs-value down tnum"><span class="arrow">▼</span>−366.28 點</div>
+          <div class="hs-sub tnum">−0.79%，連續第 2 週收黑</div>
+        </div>
+        <div class="hstat">
+          <div class="hs-label">今日單日（9/11 週五）</div>
+          <div class="hs-value down tnum"><span class="arrow">▼</span>−755.64 點</div>
+          <div class="hs-sub tnum">−1.61%，本週最大單日跌幅</div>
+        </div>
+        <div class="hstat">
+          <div class="hs-label">加權指數收盤</div>
+          <div class="hs-value tnum">46,184.85 點</div>
+          <div class="hs-sub">上週五（9/4）收 46,551.13 點</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <section class="card">
+      <div class="section-head">
+        <p class="section-eyebrow">觀察清單</p>
+        <h2 class="section-title">目前追蹤的標的（依分類）</h2>
+      </div>
+      <div class="wl-groups">
+        <span class="wl-chip"><b>2330</b> 台積電・半導體</span>
+        <span class="wl-chip"><b>00631L</b> 元大台灣50正2</span>
+        <span class="wl-chip"><b>00663L</b> 國泰臺灣加權指數正2</span>
+        <span class="wl-chip"><b>00685L</b> 群益臺灣加權指數正2</span>
+        <span class="wl-chip"><b>00981A</b> 統一台股增長主動式ETF</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <p class="section-eyebrow">產業強弱總覽</p>
+        <h2 class="section-title">本週（9/7～9/11）各產業表現排行</h2>
+        <p class="section-desc">依新聞報導的質化描述排列相對強弱（並非精確週漲跌百分比——多數產業本週精確數字查無公開資料，詳見下方說明）。棒子往右（紅色）代表偏強，往左（綠色）代表偏弱，符合台股「紅漲綠跌」的習慣。</p>
+      </div>
+
+      <div class="legend">
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--up-red)"></span>▲ 紅色＝相對偏強／收紅</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--down-green)"></span>▼ 綠色＝相對偏弱／收黑</span>
+      </div>
+
+      <div class="bar-list">
+        <div class="bar-row">
+          <div class="bar-label">金融<br><span class="bar-tag">銀行、金控</span></div>
+          <div>
+            <div class="bar-track"><div class="bar-fill pos" style="width:46%">▲ 最強</div></div>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">航運<br><span class="bar-tag">海運業</span></div>
+          <div>
+            <div class="bar-track"><div class="bar-fill pos" style="width:46%">▲ 最強</div></div>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">資訊服務／光電<br><span class="bar-tag">電子次族群</span></div>
+          <div>
+            <div class="bar-track"><div class="bar-fill pos" style="width:23%">▲ 偏強</div></div>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">石化<br><span class="bar-tag">塑化</span></div>
+          <div>
+            <div class="bar-track"><div class="bar-fill neg" style="width:23%">▼ 偏弱</div></div>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">生技醫療<br><span class="bar-tag">大幅震盪</span></div>
+          <div>
+            <div class="bar-track"><div class="bar-fill neg" style="width:23%">▼ 偏弱</div></div>
+          </div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">半導體／電子權值<br><span class="bar-tag">台積電、鴻海、聯發科</span></div>
+          <div>
+            <div class="bar-track"><div class="bar-fill neg" style="width:46%">▼ 最弱</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="scale-ticks"><div class="ticks-row"><span>最弱</span><span>偏弱</span><span>持平</span><span>偏強</span><span>最強</span></div></div>
+
+      <p class="chart-note">說明：本週19大類股中，公開報導明確指出僅「金融」與「航運」收紅，其餘（含電子）收黑，故列為並列最強；「半導體／電子權值」是本週（尤其週五）拖累大盤的主因，列為最弱。「資訊服務／光電」為週五盤中逆勢上漲的電子次族群，「石化」與「生技醫療」本週表現疲弱或劇烈震盪，但均查無精確週漲跌百分比，故以質化強弱標示，不編造精確數字。</p>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <p class="section-eyebrow">精確數字</p>
+        <h2 class="section-title">今日（9/11 週五）單日漲跌對照</h2>
+        <p class="section-desc">以下為查證到明確百分比的單日數據，供參考對照。</p>
+      </div>
+      <div class="pbar-list">
+        <div class="pbar-row">
+          <div class="pbar-label">00981A 主動式ETF</div>
+          <div class="pbar-track"><div class="pbar-fill pos" style="width:13.9%"></div></div>
+          <div class="pbar-value up tnum">+1.51%</div>
+        </div>
+        <div class="pbar-row">
+          <div class="pbar-label">金融類股</div>
+          <div class="pbar-track"><div class="pbar-fill neg" style="width:2.7%"></div></div>
+          <div class="pbar-value down tnum">−0.29%</div>
+        </div>
+        <div class="pbar-row">
+          <div class="pbar-label">加權指數</div>
+          <div class="pbar-track"><div class="pbar-fill neg" style="width:14.8%"></div></div>
+          <div class="pbar-value down tnum">−1.61%</div>
+        </div>
+        <div class="pbar-row">
+          <div class="pbar-label">電子類股</div>
+          <div class="pbar-track"><div class="pbar-fill neg" style="width:21.7%"></div></div>
+          <div class="pbar-value down tnum">−2.36%</div>
+        </div>
+      </div>
+      <p class="chart-note">00981A（主動式ETF）週五逆勢上漲，明顯跑贏電子類股與大盤，其餘三項本週查有明確單日百分比的項目全數收黑，電子類股跌幅最深。</p>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <p class="section-eyebrow">重點解讀</p>
+        <h2 class="section-title">最強與最弱，為什麼？</h2>
+      </div>
+      <div class="sw-grid">
+        <div class="sw-card strongest">
+          <div class="sw-kicker">▲ 本週最強・金融與航運</div>
+          <h3 class="sw-title">資金躲進「屋簷比較堅固」的傳產老店</h3>
+          <p>這週市場像遇到一場突如其來的驟雨——美債殖利率飆高、油價上漲的利空消息，大家紛紛從波動大的電子股工地躲進金融、航運這兩間屋簷比較堅固的老店。金融股靠外資資金回流，週五大盤重摔755點時只小跌0.29%；航運股則受惠第三季海運旺季與偏高運價，貨櫃三雄股價持續活躍。</p>
+        </div>
+        <div class="sw-card weakest">
+          <div class="sw-kicker">▼ 本週最弱・半導體／電子權值股</div>
+          <h3 class="sw-title">大樓最重的柱子晃了，整棟樓跟著搖</h3>
+          <p>台積電、鴻海、聯發科這些電子權值股在加權指數裡佔比很重，這週尤其是週五，市場擔心美債殖利率飆高會讓資金成本變貴，賣壓集中湧出，電子類股單日跌2.36%，直接把大盤拖著一起摔了755點。不過同屬電子的資訊服務、光電次族群這次逆勢上漲，顯示這次比較像「權值股獨跌」，並非電子業全面出問題。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="section-head">
+        <p class="section-eyebrow">標的觀察</p>
+        <h2 class="section-title">觀察清單與本週產業趨勢的關聯</h2>
+      </div>
+      <div class="cards-grid">
+        <div class="wcard">
+          <div class="wcard-head">
+            <span class="wcard-code">2330</span>
+          </div>
+          <div class="wcard-name">台積電</div>
+          <span class="pill flat">族群中相對抗跌</span>
+          <p>本週後段隨電子權值股一起走弱，是拖累大盤的主因之一；但在電子族群裡仍相對抗跌，且將於 9/16 除息、配發每股 7 元現金股利（例行分紅，非利空）。</p>
+        </div>
+        <div class="wcard">
+          <div class="wcard-head">
+            <span class="wcard-code">00631L・00663L・00685L</span>
+          </div>
+          <div class="wcard-name">大盤正2 ETF</div>
+          <span class="pill down">跌幅估計放大近兩倍</span>
+          <p>追蹤加權指數並放大兩倍漲跌（波動較大）。本週指數週線−0.79%、週五單日−1.61%，理論上這三檔本週跌幅會明顯大於大盤本身；精確淨值未查到公開數據，僅能以指數漲跌幅方向推估，實際數字以投信官網為準。</p>
+        </div>
+        <div class="wcard">
+          <div class="wcard-head">
+            <span class="wcard-code">00981A</span>
+          </div>
+          <div class="wcard-name">主動式台股ETF</div>
+          <span class="pill up">逆勢上漲，抗跌最明顯</span>
+          <p>由基金經理人主動選股，不是照指數買。週五逆勢上漲 1.51%，近一個月累積上漲近 5%，是觀察清單中本週表現最抗跌、甚至逆勢走高的一檔。</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <h3>資料限制</h3>
+    <ul>
+      <li>本頁以公開新聞與搜尋結果為主要來源，涵蓋本週（9/7～9/11）整週動態，以 9/11（週五）收盤後報導為基準。</li>
+      <li>多數產業（塑化、生技、資訊服務／光電等）精確「週」漲跌百分比查無公開資料，上方強弱排行以質化描述排序，未編造精確數字；已查證明確單日百分比者另列於「精確數字」區塊。</li>
+      <li>00631L、00663L、00685L 本週精確淨值漲跌幅未查到公開數據，僅以加權指數漲跌幅（理論放大兩倍）推估方向，確切數字請以各投信官網公告為準。</li>
+      <li>個股與指數精確數字，請以台灣證券交易所（TWSE）或各券商官方資料為準。</li>
+    </ul>
+    <h3>資料來源</h3>
+    <ul class="src-list">
+      <li><a href="https://www.storm.mg/article/11163818" target="_blank" rel="noopener">盤後快訊》台股大跌755點！聯電爆11萬張大量，光電與「這類股」逆勢走強－風傳媒</a></li>
+      <li><a href="https://udn.com/news/story/7251/9748787" target="_blank" rel="noopener">外資下重手！三大法人賣超近1,124億元 台股下挫755點周線翻黑－聯合新聞網</a></li>
+      <li><a href="https://udn.com/news/story/7251/9748585" target="_blank" rel="noopener">台積電收低40元拉低指數下跌755點 金融撐盤擋不住大盤下探月線－聯合新聞網</a></li>
+      <li><a href="https://news.cnyes.com/news/id/6604504" target="_blank" rel="noopener">〈台股盤後〉電子股休兵量縮跌755點險守4萬6 周線收黑跌366點－鉅亨網</a></li>
+      <li><a href="https://newtalk.tw/news/view/2026-09-11/1059218" target="_blank" rel="noopener">台股重挫755點差點失守月線！外資「連二賣」今提款893億－Newtalk新聞</a></li>
+      <li><a href="https://www.moneydj.com/kmdj/news/newsviewer.aspx?a=1c38aa74-51b3-4c1a-ac8a-9d56efd49be4" target="_blank" rel="noopener">《台股盤後》收跌755點、險守46K，周K翻黑－MoneyDJ理財網</a></li>
+      <li><a href="https://udn.com/news/story/7255/9748652" target="_blank" rel="noopener">9月電子期跌 金融期漲－聯合新聞網</a></li>
+      <li><a href="https://www.setn.com/news/1902289" target="_blank" rel="noopener">台股上週僅上漲219點 它卻暴跌近10%成最慘族群－SETN三立新聞網</a></li>
+      <li><a href="https://tw.stock.yahoo.com/quote/00981A.TW/performance" target="_blank" rel="noopener">主動統一台股增長(00981A.TW) 績效表現－Yahoo股市</a></li>
+      <li><a href="https://news.cnyes.com/news/id/6601673" target="_blank" rel="noopener">盤後速報－台積電(2330)下週(9月16日)除息7元－鉅亨網</a></li>
+    </ul>
+    <p class="stamp">報告產出時間：2026-09-11（台灣時間，排程自動產出）。完整報告見 <code>reports/2026-09-11-sector-trend.md</code>。</p>
+  </footer>
+</div>
