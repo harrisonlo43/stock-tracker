@@ -1,0 +1,428 @@
+<title>台股產業趨勢儀表板</title>
+<style>
+  /* layout: hero summary -> diverging bar chart (sector % change) -> qualitative sector cards -> watchlist cards -> footer */
+  :root{
+    --bg:#f9f9f7;
+    --surface:#fcfcfb;
+    --surface-2:#f2f1ec;
+    --ink:#12120f;
+    --ink-2:#52514e;
+    --ink-muted:#898781;
+    --line:#e1e0d9;
+    --accent:#184f95;
+    --up:#c62828;      /* 漲：紅（台股習慣） */
+    --up-fill:rgba(198,40,40,0.14);
+    --down:#127a2e;     /* 跌：綠（台股習慣） */
+    --down-fill:rgba(18,122,46,0.14);
+    --baseline:#c3c2b7;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0d0d0d;
+      --surface:#1a1a19;
+      --surface-2:#232320;
+      --ink:#f7f6f3;
+      --ink-2:#c3c2b7;
+      --ink-muted:#8f8d86;
+      --line:#2c2c2a;
+      --accent:#7fb0ee;
+      --up:#e66767;
+      --up-fill:rgba(230,103,103,0.16);
+      --down:#189e3a;
+      --down-fill:rgba(24,158,58,0.18);
+      --baseline:#383835;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0d0d0d;
+    --surface:#1a1a19;
+    --surface-2:#232320;
+    --ink:#f7f6f3;
+    --ink-2:#c3c2b7;
+    --ink-muted:#8f8d86;
+    --line:#2c2c2a;
+    --accent:#7fb0ee;
+    --up:#e66767;
+    --up-fill:rgba(230,103,103,0.16);
+    --down:#189e3a;
+    --down-fill:rgba(24,158,58,0.18);
+    --baseline:#383835;
+    color-scheme: dark;
+  }
+
+  *{box-sizing:border-box;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,-apple-system,sans-serif;
+    padding-inline:16px;
+    padding-block: max(20px, env(safe-area-inset-top,0px)) max(40px, env(safe-area-inset-bottom,0px));
+    line-height:1.6;
+  }
+  h1,h2,h3{ text-wrap:balance; font-family:"Noto Serif TC","Noto Sans TC",serif; }
+  .wrap{ max-width:880px; margin:0 auto; display:flex; flex-direction:column; gap:28px; }
+
+  /* theme toggle */
+  .toolbar{ display:flex; justify-content:flex-end; }
+  .theme-toggle{
+    display:inline-flex; gap:4px; padding:4px; border:1px solid var(--line);
+    border-radius:999px; background:var(--surface);
+  }
+  .theme-toggle button{
+    border:none; background:transparent; color:var(--ink-2); font-size:12px;
+    padding:6px 12px; border-radius:999px; cursor:pointer; font-family:inherit;
+  }
+  .theme-toggle button.active{ background:var(--surface-2); color:var(--ink); font-weight:700; }
+
+  /* hero */
+  .hero{
+    background:linear-gradient(180deg, var(--surface) 0%, var(--surface) 100%);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:28px 24px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .hero .eyebrow{
+    font-size:12px; letter-spacing:.08em; color:var(--ink-muted); text-transform:uppercase;
+    display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+  }
+  .hero .eyebrow .dot{ width:6px; height:6px; border-radius:50%; background:var(--down); display:inline-block; }
+  .hero h1{
+    font-size: clamp(22px, 5vw, 32px);
+    font-weight:700; margin:0; line-height:1.45;
+  }
+  .hero h1 b{ color:var(--down); font-weight:700; }
+  .hero h1 .redb{ color:var(--up); font-weight:700; }
+  .hero .sub{ color:var(--ink-2); font-size:14px; margin:0; }
+  .caveat{
+    display:flex; gap:8px; align-items:flex-start; background:var(--surface-2);
+    border:1px solid var(--line); border-radius:12px; padding:10px 14px; font-size:12.5px; color:var(--ink-2);
+  }
+  .caveat .mark{ color:var(--accent); font-weight:700; flex:none; }
+
+  /* section headers */
+  .section-head{ display:flex; flex-direction:column; gap:4px; }
+  .section-head h2{ font-size:19px; margin:0; }
+  .section-head p{ margin:0; color:var(--ink-2); font-size:13px; }
+
+  /* chart card */
+  .chart-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:20px;
+    padding:22px 20px 18px;
+  }
+  .legend{ display:flex; gap:18px; flex-wrap:wrap; margin-bottom:18px; font-size:12.5px; color:var(--ink-2); }
+  .legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .legend i{ width:12px; height:12px; border-radius:3px; display:inline-block; }
+  .legend i.up{ background:var(--up); }
+  .legend i.down{ background:var(--down); }
+
+  .chart{ display:flex; flex-direction:column; gap:14px; }
+  .row{ display:grid; grid-template-columns: 96px 1fr 64px; align-items:center; gap:10px; }
+  .row .label{ font-size:13px; color:var(--ink); font-weight:500; min-width:0; }
+  .row .label .badge{
+    display:block; font-size:10.5px; font-weight:700; letter-spacing:.03em;
+    padding:1px 6px; border-radius:6px; margin-top:2px; width:fit-content;
+  }
+  .row .label .badge.strongest{ background:var(--up-fill); color:var(--up); }
+  .row .label .badge.weakest{ background:var(--down-fill); color:var(--down); }
+  .track{
+    position:relative; height:28px; background:var(--surface-2); border-radius:6px;
+    overflow:visible;
+  }
+  .track .zero{
+    position:absolute; top:-4px; bottom:-4px; width:1px; background:var(--baseline);
+  }
+  .bar{
+    position:absolute; top:3px; bottom:3px; border-radius:4px;
+  }
+  .bar.up{ background:var(--up); }
+  .bar.down{ background:var(--down); }
+  .row .value{
+    font-variant-numeric:tabular-nums; font-size:13.5px; font-weight:700; text-align:right;
+  }
+  .row .value.up{ color:var(--up); }
+  .row .value.down{ color:var(--down); }
+  .chart-note{ margin-top:16px; font-size:12px; color:var(--ink-muted); }
+
+  /* qualitative cards */
+  .grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:12px; }
+  .card{
+    background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding:16px; display:flex; flex-direction:column; gap:8px; min-width:0;
+  }
+  .card .top{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .card h3{ font-size:15px; margin:0; }
+  .pill{
+    font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; white-space:nowrap; flex:none;
+  }
+  .pill.up{ background:var(--up-fill); color:var(--up); }
+  .pill.down{ background:var(--down-fill); color:var(--down); }
+  .pill.flat{ background:var(--surface-2); color:var(--ink-2); }
+  .card p{ margin:0; font-size:13px; color:var(--ink-2); }
+  .card .tag{ font-size:11px; color:var(--ink-muted); }
+
+  /* watchlist table-like cards */
+  .wl-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding:16px; display:flex; flex-direction:column; gap:6px; min-width:0;
+  }
+  .wl-card .top{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; flex-wrap:wrap; }
+  .wl-card .code{ font-variant-numeric:tabular-nums; font-weight:700; color:var(--accent); font-size:13px; }
+  .wl-card h3{ font-size:15px; margin:0; }
+  .wl-card .cat{ font-size:11px; color:var(--ink-muted); }
+  .wl-card p{ margin:4px 0 0; font-size:13px; color:var(--ink-2); }
+
+  footer{
+    border-top:1px solid var(--line); padding-top:16px; font-size:12px; color:var(--ink-muted);
+    display:flex; flex-direction:column; gap:4px;
+  }
+
+  @media (max-width:480px){
+    .row{ grid-template-columns: 78px 1fr 52px; gap:6px; }
+    .hero{ padding:22px 16px; }
+  }
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+<div class="wrap">
+
+  <div class="toolbar">
+    <div class="theme-toggle" role="group" aria-label="主題切換">
+      <button type="button" data-theme-choice="light">淺色</button>
+      <button type="button" data-theme-choice="dark">深色</button>
+      <button type="button" data-theme-choice="system" class="active">跟隨系統</button>
+    </div>
+  </div>
+
+  <section class="hero">
+    <div class="eyebrow"><span class="dot"></span>2026-09-29（週二）· 台股產業趨勢儀表板</div>
+    <h1>連假後補跌，<span class="redb">IC 設計／半導體</span>被錯殺重摔，資金轉進<span class="redb">塑膠／傳產</span>；大盤收<b>47,631 點，跌 0.82%</b>。</h1>
+    <p class="sub">今天是連假（中秋＋教師節）後第一個交易日，也是本週唯一一天有交易，所以下面「本週表現」目前等於「今天的表現」。</p>
+    <div class="caveat">
+      <span class="mark">ⓘ</span>
+      <span>資料限制：本週僅有 1 個交易日資料，完整週漲跌要等週五收盤才能確定；圖表只放「查得到精確數字」的族群，航運／生技／AI 供應鏈等沒有精確週漲跌幅的族群，改用文字卡片呈現方向與原因，不編造數字。</span>
+    </div>
+  </section>
+
+  <section class="section-head">
+    <h2>各產業本週漲跌幅（唯一交易日：9/29）</h2>
+    <p>紅色＝上漲、綠色＝下跌（台股慣例）。長條愈長，代表漲跌幅愈大。</p>
+  </section>
+
+  <section class="chart-card">
+    <div class="legend">
+      <span><i class="up"></i>▲ 上漲（紅）</span>
+      <span><i class="down"></i>▼ 下跌（綠）</span>
+    </div>
+    <div class="chart" id="chart" data-palette="#c62828,#127a2e"></div>
+    <div class="chart-note">資料來源：各產業類股指數當日漲跌幅（經濟日報／工商時報等公開報導），基準為 9/24（連假前最後交易日）收盤價。無障礙設計：紅／綠對色盲讀者不易區分，所以每根長條都同時用「位置」（在中線左邊還是右邊）與「▲／▼ 加減號數字」標示漲跌，不是只靠顏色判斷。</div>
+  </section>
+
+  <section class="section-head">
+    <h2>沒有精確數字的族群：方向與原因</h2>
+    <p>以下族群查不到精確的本週漲跌百分比，所以不放進上面的圖表，只用文字說明目前偏多或偏空、以及白話原因。</p>
+  </section>
+
+  <div class="grid" id="qual-cards"></div>
+
+  <section class="section-head">
+    <h2>觀察清單標的表現</h2>
+    <p>你的 watchlist.txt 目前追蹤的 5 檔標的，跟本週產業趨勢的關聯摘要。</p>
+  </section>
+
+  <div class="grid" id="watchlist-cards"></div>
+
+  <footer>
+    <div>資料來源：公開新聞與行情網站搜尋結果（經濟日報、工商時報、中時新聞網、鉅亨網、理財周刊等）及各 ETF 公開績效頁面；未直接串接交易所即時資料庫，數字以搜尋當下取得之公開報導為準，可能與實際收盤數字略有落差。完整報告見 reports/2026-09-29-sector-trend.md。</div>
+    <div>產出時間：2026-09-29（台北時間）</div>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  try{
+    var saved = localStorage.getItem('theme-pref');
+    if(saved === 'light' || saved === 'dark'){
+      document.documentElement.setAttribute('data-theme', saved);
+    }
+  }catch(e){}
+
+  function setTheme(choice){
+    if(choice === 'system'){
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', choice);
+    }
+    try{ localStorage.setItem('theme-pref', choice); }catch(e){}
+    document.querySelectorAll('.theme-toggle button').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-theme-choice') === choice);
+    });
+  }
+
+  document.querySelectorAll('.theme-toggle button').forEach(function(b){
+    b.addEventListener('click', function(){ setTheme(b.getAttribute('data-theme-choice')); });
+  });
+
+  try{
+    var savedInit = localStorage.getItem('theme-pref') || 'system';
+    document.querySelectorAll('.theme-toggle button').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-theme-choice') === savedInit);
+    });
+  }catch(e){}
+})();
+
+// ---- diverging bar chart: sector weekly % change (only real numbers) ----
+(function(){
+  var data = [
+    { label: '塑膠／傳產', value: 2.68, tag: 'strongest' },
+    { label: '金融', value: -0.54, tag: null },
+    { label: '大盤加權指數', value: -0.82, tag: null },
+    { label: '半導體（整體）', value: -0.88, tag: null },
+    { label: 'IC 設計', value: -3.15, tag: 'weakest' }
+  ];
+  var max = Math.max.apply(null, data.map(function(d){ return Math.abs(d.value); }));
+  var domain = Math.ceil(max * 1.15 * 10) / 10; // pad ~15%, round to 0.1
+
+  var chart = document.getElementById('chart');
+  data.forEach(function(d){
+    var row = document.createElement('div');
+    row.className = 'row';
+
+    var label = document.createElement('div');
+    label.className = 'label';
+    label.textContent = d.label;
+    if(d.tag){
+      var badge = document.createElement('span');
+      badge.className = 'badge ' + d.tag;
+      badge.textContent = d.tag === 'strongest' ? '本週最強' : '本週最弱';
+      label.appendChild(badge);
+    }
+
+    var track = document.createElement('div');
+    track.className = 'track';
+    var zero = document.createElement('div');
+    zero.className = 'zero';
+    zero.style.left = (50) + '%';
+    track.appendChild(zero);
+
+    var bar = document.createElement('div');
+    var pct = Math.abs(d.value) / domain * 50; // half-width from center
+    bar.className = 'bar ' + (d.value >= 0 ? 'up' : 'down');
+    if(d.value >= 0){
+      bar.style.left = '50%';
+      bar.style.width = pct + '%';
+    } else {
+      bar.style.left = (50 - pct) + '%';
+      bar.style.width = pct + '%';
+    }
+    track.appendChild(bar);
+
+    var value = document.createElement('div');
+    value.className = 'value ' + (d.value >= 0 ? 'up' : 'down');
+    value.textContent = (d.value >= 0 ? '▲+' : '▼') + d.value.toFixed(2) + '%';
+
+    row.appendChild(label);
+    row.appendChild(track);
+    row.appendChild(value);
+    chart.appendChild(row);
+  });
+})();
+
+// ---- qualitative sector cards (no precise numbers) ----
+(function(){
+  var cards = [
+    {
+      name: '航運（貨櫃、散裝）',
+      dir: 'up',
+      dirLabel: '▲ 偏多',
+      text: '美中互降關稅是利多，加上第4季是傳統運輸旺季（大家準備年底購物季、聖誕節出貨），跨太平洋航線貨量看增、美國線運價有撐。'
+    },
+    {
+      name: '生技／醫療',
+      dir: 'up',
+      dirLabel: '▲ 偏多',
+      text: '醫療保健的需求比較不受景氣循環影響（大家生病還是要看醫生、買藥），基本面相對穩健，持續有資金流入。'
+    },
+    {
+      name: 'AI 供應鏈（記憶體、先進封裝）',
+      dir: 'flat',
+      dirLabel: '震盪整理',
+      text: '8 月以來一路最強，這幾天因獲利了結賣壓、加上 Google TPU 訂單傳出變數而轉為震盪；法人認為只要長期需求沒有轉弱，回檔仍是找買點的機會。'
+    }
+  ];
+
+  var wrap = document.getElementById('qual-cards');
+  cards.forEach(function(c){
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML =
+      '<div class="top"><h3>' + c.name + '</h3><span class="pill ' + c.dir + '">' + c.dirLabel + '</span></div>' +
+      '<p>' + c.text + '</p>' +
+      '<span class="tag">無精確週漲跌幅數字</span>';
+    wrap.appendChild(card);
+  });
+})();
+
+// ---- watchlist cards ----
+(function(){
+  var items = [
+    {
+      code: '2330',
+      name: '台積電',
+      cat: '半導體個股',
+      dir: 'flat',
+      dirLabel: '持平',
+      text: '股價維持在 2,475～2,480 元附近，波動遠小於同屬半導體、被錯殺的 IC 設計同業。即將舉行的法人說明會被視為觀察後市的重要指標。'
+    },
+    {
+      code: '00631L',
+      name: '元大台灣50正2',
+      cat: '大盤槓桿 ETF（正2）',
+      dir: 'down',
+      dirLabel: '▼ 估計下跌',
+      text: '追蹤大盤兩倍、漲跌都放大。今天大盤跌 0.82%，理論上這類正2 ETF 跌幅會被放大到接近雙倍（估計約 -1.6% 上下，實際數字受追蹤誤差、內扣費用影響，未查得精確數字）。'
+    },
+    {
+      code: '00663L',
+      name: '國泰臺灣加權指數正2',
+      cat: '大盤槓桿 ETF（正2）',
+      dir: 'down',
+      dirLabel: '▼ 估計下跌',
+      text: '同樣追蹤大盤兩倍。今天走勢預期與 00631L、00685L 同步，跌幅同步放大，波動風險較高，適合能承受大起大落的投資人。'
+    },
+    {
+      code: '00685L',
+      name: '群益臺灣加權指數正2',
+      cat: '大盤槓桿 ETF（正2）',
+      dir: 'down',
+      dirLabel: '▼ 估計下跌',
+      text: '同樣追蹤大盤兩倍。三檔正2 ETF 走勢高度連動，今天理論跌幅都會是大盤的兩倍上下，是觀察清單中波動最大的一組標的。'
+    },
+    {
+      code: '00981A',
+      name: '統一台股增長主動式ETF',
+      cat: '主動式台股 ETF',
+      dir: 'up',
+      dirLabel: '▲ 近一週 +3.73%',
+      text: '由基金經理人主動選股（不是照指數機械式買進），近一週績效逆勢跑贏大盤，推測與提前布局這波資金輪動受惠的傳產、生技類股有關，是觀察清單中表現最亮眼的標的。'
+    }
+  ];
+
+  var wrap = document.getElementById('watchlist-cards');
+  items.forEach(function(it){
+    var card = document.createElement('div');
+    card.className = 'wl-card';
+    card.innerHTML =
+      '<div class="top"><h3>' + it.name + '</h3><span class="pill ' + it.dir + '">' + it.dirLabel + '</span></div>' +
+      '<div><span class="code">' + it.code + '</span> <span class="cat">· ' + it.cat + '</span></div>' +
+      '<p>' + it.text + '</p>';
+    wrap.appendChild(card);
+  });
+})();
+</script>
