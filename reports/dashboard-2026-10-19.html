@@ -1,0 +1,436 @@
+<title>台股產業趨勢儀表板</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* layout: ticker-board hero → data-limit notice → today's stat tiles → 6-day continuity chart → qualitative status board → watchlist cards → footnotes */
+:root{
+  --bg:#f7f5ef;
+  --surface:#ffffff;
+  --surface-2:#fcfbf7;
+  --ink:#18140f;
+  --ink-2:#55514a;
+  --muted:#8a8578;
+  --border:rgba(24,20,15,0.12);
+  --grid:#e6e1d4;
+  --accent:#a6690c;
+  --accent-soft:#f1e2c4;
+  --up:#c82f30;
+  --up-soft:#f7dcdc;
+  --down:#15803d;
+  --down-soft:#dcf2dc;
+  --neutral:#8a8578;
+  --font-display:"Noto Serif TC", "Source Han Serif TC", serif;
+  --font-body:"Noto Sans TC", "Source Han Sans TC", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111009;
+    --surface:#1b1912;
+    --surface-2:#1f1d15;
+    --ink:#f3efe4;
+    --ink-2:#c7c1b2;
+    --muted:#8f897a;
+    --border:rgba(255,255,255,0.12);
+    --grid:#312e22;
+    --accent:#e0a526;
+    --accent-soft:#3a2e13;
+    --up:#e2514f;
+    --up-soft:#3a1d1d;
+    --down:#2fae6c;
+    --down-soft:#15311a;
+    --neutral:#8f897a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111009;
+  --surface:#1b1912;
+  --surface-2:#1f1d15;
+  --ink:#f3efe4;
+  --ink-2:#c7c1b2;
+  --muted:#8f897a;
+  --border:rgba(255,255,255,0.12);
+  --grid:#312e22;
+  --accent:#e0a526;
+  --accent-soft:#3a2e13;
+  --up:#e2514f;
+  --up-soft:#3a1d1d;
+  --down:#2fae6c;
+  --down-soft:#15311a;
+  --neutral:#8f897a;
+  color-scheme: dark;
+}
+
+*{box-sizing:border-box;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:28px;
+  max-width:880px;
+  margin:0 auto;
+}
+h1,h2,h3{font-family:var(--font-display); text-wrap:balance; margin:0;}
+p{margin:0;}
+.tabular{font-variant-numeric:tabular-nums;}
+
+/* ---- hero ---- */
+.hero{
+  background:linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:26px 22px;
+  margin-bottom:22px;
+}
+.hero-eyebrow{
+  display:flex; align-items:center; gap:10px;
+  color:var(--accent); font-size:12.5px; letter-spacing:0.12em; font-weight:700;
+  text-transform:uppercase; margin-bottom:14px;
+}
+.hero-eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--down);box-shadow:0 0 0 3px var(--down-soft);}
+.hero h1{font-size:clamp(20px, 4.4vw, 28px); line-height:1.55; font-weight:600; color:var(--ink);}
+.hero h1 b{color:var(--accent); font-weight:700;}
+.hero h1 b.up{color:var(--up);}
+.hero h1 b.down{color:var(--down);}
+.hero-meta{
+  margin-top:16px; display:flex; flex-wrap:wrap; gap:8px 18px;
+  color:var(--ink-2); font-size:12.5px;
+}
+.hero-meta span b{color:var(--ink); font-weight:600;}
+
+/* ---- section shell ---- */
+section{margin-bottom:26px;}
+.section-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;}
+.section-head h2{font-size:16.5px; font-weight:700; color:var(--ink);}
+.section-head .section-sub{font-size:12px; color:var(--muted);}
+.card{
+  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  padding:18px 16px;
+}
+
+.caveat{
+  display:flex; gap:8px; align-items:flex-start; background:var(--accent-soft);
+  border-radius:10px; padding:10px 12px; font-size:12px; color:var(--ink-2); line-height:1.6;
+  margin-bottom:0;
+}
+.caveat b{color:var(--accent);}
+
+/* ---- stat tiles ---- */
+.tile-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
+@media (max-width:620px){ .tile-grid{grid-template-columns:repeat(2,1fr);} }
+.tile{
+  background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  padding:14px; min-width:0;
+}
+.tile .t-label{font-size:11px; color:var(--muted); font-weight:600; letter-spacing:0.02em; margin-bottom:6px;}
+.tile .t-value{font-size:19px; font-weight:700; color:var(--ink); line-height:1.3;}
+.tile .t-value.up{color:var(--up);} .tile .t-value.down{color:var(--down);}
+.tile .t-sub{font-size:11px; color:var(--muted); margin-top:4px; line-height:1.5;}
+
+/* ---- legend ---- */
+.legend{display:flex; gap:18px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-2); margin-bottom:16px;}
+.legend-item{display:flex; align-items:center; gap:6px;}
+.legend-swatch{width:12px;height:12px;border-radius:3px;}
+.legend-swatch.hl{width:12px;height:12px;border-radius:3px;border:2px solid var(--accent); background:none;}
+
+/* ---- bar chart (quantitative) ---- */
+.chart-wrap{overflow-x:auto;}
+.chart-svg{display:block; width:100%; min-width:460px;}
+.chart-svg text{font-family:var(--font-body); fill:var(--ink-2);}
+.chart-svg .axis-label{font-size:11px; fill:var(--muted);}
+.chart-svg .row-name{font-size:13px; font-weight:700; fill:var(--ink);}
+.chart-svg .row-sub{font-size:10.5px; fill:var(--muted);}
+.chart-svg .val-label{font-size:12.5px; font-weight:700; font-variant-numeric:tabular-nums;}
+.chart-svg .grid-line{stroke:var(--grid); stroke-width:1;}
+.chart-svg .zero-line{stroke:var(--muted); stroke-width:1.2;}
+
+/* ---- qualitative status board ---- */
+.status-list{display:flex; flex-direction:column; gap:12px;}
+.status-row{
+  display:grid; grid-template-columns:190px auto 1fr; gap:10px 14px; align-items:start;
+  padding-bottom:12px; border-bottom:1px solid var(--grid);
+}
+.status-row:last-child{border-bottom:none; padding-bottom:0;}
+@media (max-width:560px){
+  .status-row{grid-template-columns:1fr; gap:6px;}
+}
+.row-label{font-size:13.5px; font-weight:700; color:var(--ink); padding-top:3px;}
+.row-badge{
+  font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px;
+  letter-spacing:0.02em; white-space:nowrap; height:fit-content; display:inline-flex; align-items:center; gap:4px;
+}
+.row-badge.strong{background:var(--up-soft); color:var(--up);}
+.row-badge.weak{background:var(--down-soft); color:var(--down);}
+.row-badge.watch{background:var(--surface-2); color:var(--muted); border:1px solid var(--grid);}
+.row-note{font-size:12.5px; color:var(--ink-2); line-height:1.65;}
+
+/* ---- watchlist cards ---- */
+.watch-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px;}
+@media (max-width:560px){ .watch-grid{grid-template-columns:1fr;} }
+.watch-card{
+  background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  padding:14px; min-width:0;
+}
+.watch-card .wc-top{display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:6px;}
+.watch-card .wc-code{font-size:12px; color:var(--muted); font-weight:600;}
+.watch-card .wc-name{font-size:14.5px; font-weight:700; color:var(--ink);}
+.watch-card .wc-cat{font-size:11px; color:var(--accent); margin-bottom:8px; font-weight:600;}
+.watch-card .wc-stat{display:flex; align-items:baseline; gap:8px; margin-bottom:8px; flex-wrap:wrap;}
+.watch-card .wc-stat .v{font-size:17px; font-weight:700; color:var(--ink);}
+.watch-card .wc-stat .v.up{color:var(--up);} .watch-card .wc-stat .v.down{color:var(--down);} .watch-card .wc-stat .v.flat{color:var(--muted);}
+.watch-card .wc-stat .l{font-size:11.5px; color:var(--muted);}
+.watch-card .wc-note{font-size:12px; color:var(--ink-2); line-height:1.55;}
+
+/* ---- footer ---- */
+footer{
+  font-size:11.5px; color:var(--muted); line-height:1.7; border-top:1px solid var(--border);
+  padding-top:14px; margin-top:8px;
+}
+footer p + p{margin-top:6px;}
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@500;600;700&display=swap">
+
+<div class="hero">
+  <div class="hero-eyebrow"><span class="dot"></span>台股產業趨勢・本週開局（第1個交易日）</div>
+  <h1>這週（10/19～10/23）才剛開局：週一加權指數小跌289點（<b class="down">約-0.61%</b>），收46,822點。外資已經<b class="down">連續賣超第9天</b>（台積電仍是主要被賣標的），但投信連續<b class="up">第7天逆勢買超</b>承接；台積電靠盤尾大單撐住、收平盤2,420元，沒有重摔，但<b>目前資料只有1天</b>，還太早判斷本週最強最弱產業是誰。</h1>
+  <div class="hero-meta">
+    <span>報告日期：<b>2026-10-19（週一，本週第1個交易日）</b></span>
+    <span>加權指數收盤：<b class="tabular">46,822.08</b>（<b class="tabular" style="color:var(--down)">▼289.18點・-0.61%</b>）</span>
+    <span>籌碼動向：<b>外資連9賣・投信連7買</b></span>
+    <span>台積電：<b class="tabular">2,420元・持平</b>（盤尾大單護盤）</span>
+  </div>
+</div>
+
+<section>
+  <div class="caveat">
+    <span>⚠️</span>
+    <span><b>資料範圍說明：</b>本篇是「本週開局速寫」，產出於週一（10/19）盤後，<b>本週目前只有第一個交易日的資料</b>，和過去完整五個交易日的週報不同。今日各產業（金融、傳產、生技、航運、櫃買）個別漲跌幅、00631L／00663L／00685L／00981A今日股價或淨值，公開搜尋查無確切數字，下方不編造精確數字，僅就查得到的範圍說明，本週最強最弱產業留待交易日資料更完整後再判斷。</span>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>今日（10/19）盤後重點</h2>
+    <span class="section-sub">唯一已確認的本週交易日資料</span>
+  </div>
+  <div class="tile-grid">
+    <div class="tile">
+      <div class="t-label">加權指數收盤</div>
+      <div class="t-value down tabular">46,822.08</div>
+      <div class="t-sub">▼289.18點（約-0.61%）・開盤46,844.64，盤中低點約46,170</div>
+    </div>
+    <div class="tile">
+      <div class="t-label">成交金額</div>
+      <div class="t-value tabular">約825～826億元</div>
+      <div class="t-sub">不同媒體統計略有差異（新台幣）</div>
+    </div>
+    <div class="tile">
+      <div class="t-label">漲跌家數</div>
+      <div class="t-value down">普跌局面</div>
+      <div class="t-sub">兩份報導數字不一（167↑/864↓ 或 327↑/1,511↓），皆顯示跌家遠多於漲家</div>
+    </div>
+    <div class="tile">
+      <div class="t-label">外資買賣超</div>
+      <div class="t-value down">連9賣</div>
+      <div class="t-sub">延續上週賣超台積電的動作，尚未停止</div>
+    </div>
+    <div class="tile">
+      <div class="t-label">投信買賣超</div>
+      <div class="t-value up">連7買</div>
+      <div class="t-sub">本土基金逆勢接手，三大法人今日合計淨賣超約899.6億元</div>
+    </div>
+    <div class="tile">
+      <div class="t-label">2330 台積電</div>
+      <div class="t-value flat tabular">2,420元</div>
+      <div class="t-sub">收平盤，盤尾約4,040張大單護盤</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>上週收官到本週開局：加權指數最近6個交易日</h2>
+    <span class="section-sub">紅＝漲，綠＝跌（台股慣例）・金框＝本週（目前僅1天）</span>
+  </div>
+  <div class="card">
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--up)"></span>▲ 上漲</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--down)"></span>▼ 下跌</div>
+      <div class="legend-item"><span class="legend-swatch hl"></span>本週交易日</div>
+    </div>
+    <div class="chart-wrap">
+      <svg class="chart-svg" viewBox="0 0 760 290" preserveAspectRatio="xMinYMin meet" role="img" aria-label="上週週一約持平，週二跌1.95%，週三漲0.59%，週四大跌3.41%，週五漲0.3%；本週週一（目前唯一交易日）跌0.61%">
+        <g id="gridlines"></g>
+        <g id="zeroline"></g>
+        <g id="bars"></g>
+      </svg>
+    </div>
+    <div style="margin-top:4px; font-size:11px; color:var(--muted);">數值為加權指數各日收盤相對前一交易日收盤之漲跌幅。上週（10/12～10/16）累計下跌約4.4%～4.5%，結束連四週收紅；本週（10/19起）目前僅週一一天資料，跌0.61%收46,822.08點，趨勢仍在發展中，尚不構成「本週累計」。</div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>各產業本週動向（僅1天資料，供參考）</h2>
+    <span class="section-sub">今日無逐產業漲跌幅報導，以方向性觀察為主</span>
+  </div>
+  <div class="card">
+    <div class="status-list" id="status-list"></div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>觀察清單標的</h2>
+    <span class="section-sub">watchlist.txt 分類</span>
+  </div>
+  <div class="watch-grid">
+    <div class="watch-card">
+      <div class="wc-top"><span class="wc-name">台積電</span><span class="wc-code tabular">2330</span></div>
+      <div class="wc-cat">半導體個股</div>
+      <div class="wc-stat"><span class="v flat tabular">2,420元</span><span class="l tabular">收平盤・盤尾大單護盤</span></div>
+      <div class="wc-note">今天尾盤出現約4,040張大單進場，股價收平盤2,420元，沒有延續上週四單日重摔3.41%的頹勢；但外資賣超台積電已連續9個交易日，顯示外資資金還沒真正回頭，股價能撐住比較像是「有特定買盤接手」。建議持續觀察外資買賣超天數是否轉正，是這檔股票本週能否止穩的重要訊號。</div>
+    </div>
+    <div class="watch-card">
+      <div class="wc-top"><span class="wc-name">元大台灣50正2</span><span class="wc-code tabular">00631L</span></div>
+      <div class="wc-cat">大盤槓桿 ETF（正2，追蹤大盤兩倍、漲跌都放大）</div>
+      <div class="wc-stat"><span class="v down tabular">理論上跌幅約大盤兩倍</span><span class="l">今日逐檔精確淨值未查得</span></div>
+      <div class="wc-note">追蹤大盤兩倍、漲跌都放大、波動較大。今天大盤跌約0.61%，理論上這類「兩倍放大鏡」工具今天跌幅會比大盤更深（實際數字因每日複利與追蹤誤差會有落差，公開資料查無今天逐檔精確淨值）。本週才剛開始，波動本來就大，不適合當長期穩定存股工具。</div>
+    </div>
+    <div class="watch-card">
+      <div class="wc-top"><span class="wc-name">國泰臺灣加權正2</span><span class="wc-code tabular">00663L</span></div>
+      <div class="wc-cat">大盤槓桿 ETF（正2）</div>
+      <div class="wc-stat"><span class="v down tabular">理論上跌幅約大盤兩倍</span><span class="l">今日逐檔精確淨值未查得</span></div>
+      <div class="wc-note">同為正2槓桿商品，方向與另外兩檔一致。今天大盤普跌，對正2商品來說等於承受大盤兩倍的衝擊力道，提醒風險承受度要夠高才適合持有。</div>
+    </div>
+    <div class="watch-card">
+      <div class="wc-top"><span class="wc-name">群益臺灣加權正2</span><span class="wc-code tabular">00685L</span></div>
+      <div class="wc-cat">大盤槓桿 ETF（正2）</div>
+      <div class="wc-stat"><span class="v down tabular">理論上跌幅約大盤兩倍</span><span class="l">今日逐檔精確淨值未查得</span></div>
+      <div class="wc-note">這類工具漲的時候用兩倍速度漲，跌的時候也用兩倍速度跌。本週才剛開局，波動比平常更需要留意，較適合短線操作、不適合長期穩定存股。</div>
+    </div>
+    <div class="watch-card" style="grid-column:1 / -1;">
+      <div class="wc-top"><span class="wc-name">統一台股增長主動式ETF</span><span class="wc-code tabular">00981A</span></div>
+      <div class="wc-cat">主動式台股 ETF（經理人主動選股，不是照指數買）</div>
+      <div class="wc-stat"><span class="v flat tabular">10月最新淨值未查得</span><span class="l">最近可查數字：7月初約32.46元・規模約2,958億元</span></div>
+      <div class="wc-note">由基金經理人主動挑股票、不是照指數買進，過去持股集中在台積電、半導體與電子零組件，邏輯上今天大盤普跌、台積電雖收平盤但外資仍賣超，這檔ETF淨值波動方向可能跟著偏弱；但公開資料查不到10月最新逐日淨值（最近可查到的數字是7月初，距今已有相當時間落差，不能代表現況），過去績效不代表未來表現，請勿當作投資依據。</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p><b>資料來源：</b>今日加權指數開高低收點位、成交金額、三大法人買賣超動向（中央社cna.com.tw、Newtalk新聞newtalk.tw）；台積電今日盤尾大單護盤消息（ETtoday財經雲ettoday.net）；上週航運類股累計漲幅、美中貿易休兵延長消息背景（經濟日報udn.com、money.udn.com）；上週台積電遭外資連續賣超報導（優分析uanalyze.com.tw）；美國聯準會10月利率會議時程（federalreserve.gov）。</p>
+  <p><b>資料限制：</b>今日各產業（金融、傳產、生技、航運、櫃買）個別漲跌幅、00631L／00663L／00685L今日股價或淨值、00981A 10月最新淨值，均未查得確切數字，本週最強最弱產業留待後續交易日資料更完整後再判斷。</p>
+  <p><b>產出時間：</b>2026-10-19 台北時間（本週第1個交易日盤後整理）・完整版文字報告見 reports/2026-10-19-sector-trend.md</p>
+</footer>
+
+<script>
+(function(){
+  var svgNS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs, text){
+    var e = document.createElementNS(svgNS, tag);
+    for (var k in attrs){ e.setAttribute(k, attrs[k]); }
+    if (text !== undefined){ e.textContent = text; }
+    return e;
+  }
+
+  // ---- chart: 6-day index close % change (last week + this week's day 1) ----
+  (function(){
+    var svg = document.querySelector('.chart-svg');
+    var left = 92, right = 50, top = 16, bottom = 26;
+    var w = 760 - left - right;
+    var domainMin = -4.0, domainMax = 1.2;
+    function xForVal(v){ return left + (v - domainMin) / (domainMax - domainMin) * w; }
+    var zeroX = xForVal(0);
+
+    var ticks = [-4, -3, -2, -1, 0, 1];
+    var gridG = document.getElementById('gridlines');
+    var chartTop = top, chartBottom = top + 238;
+    ticks.forEach(function(t){
+      var x = xForVal(t);
+      gridG.appendChild(el('line', {x1:x, x2:x, y1:chartTop, y2:chartBottom, class:'grid-line'}));
+      gridG.appendChild(el('text', {x:x, y:chartBottom+14, class:'axis-label', 'text-anchor':'middle'}, t + '%'));
+    });
+    document.getElementById('zeroline').appendChild(
+      el('line', {x1:zeroX, x2:zeroX, y1:chartTop-4, y2:chartBottom+4, class:'zero-line'})
+    );
+
+    var days = [
+      { day:'上週一 10/12', pct:-0.02, close:'49,301.96', thisWeek:false },
+      { day:'上週二 10/13', pct:-1.95, close:'48,341.31', thisWeek:false },
+      { day:'上週三 10/14', pct:0.59, close:'48,625.83', thisWeek:false },
+      { day:'上週四 10/15', pct:-3.41, close:'46,969.87', thisWeek:false },
+      { day:'上週五 10/16', pct:0.30, close:'47,111.00', thisWeek:false },
+      { day:'本週一 10/19', pct:-0.61, close:'46,822.08', thisWeek:true }
+    ];
+
+    var barsG = document.getElementById('bars');
+    var rowH = 34, barH = 18;
+    days.forEach(function(d, i){
+      var y = chartTop + 6 + i * rowH;
+
+      barsG.appendChild(el('text', {
+        x: left - 12, y: y + barH/2 + 4, class:'row-name', 'text-anchor':'end', fill: d.thisWeek ? 'var(--accent)' : 'var(--ink)'
+      }, d.day));
+
+      var isUp = d.pct > 0;
+      var isFlat = Math.abs(d.pct) < 0.05;
+      var color = isFlat ? 'var(--muted)' : (isUp ? 'var(--up)' : 'var(--down)');
+      var x0 = Math.min(zeroX, xForVal(d.pct));
+      var x1 = Math.max(zeroX, xForVal(d.pct));
+      var barW = isFlat ? 3 : Math.max(x1-x0,3);
+      var barX = isFlat ? zeroX - 1.5 : x0;
+
+      barsG.appendChild(el('rect', {
+        x:barX, y:y, width:barW, height:barH, rx:3, fill:color,
+        stroke: d.thisWeek ? 'var(--accent)' : 'none', 'stroke-width': d.thisWeek ? 2 : 0
+      }));
+
+      var labelX, anchor;
+      if (isFlat){ labelX = zeroX + 10; anchor='start'; }
+      else if (isUp){ labelX = x1 + 8; anchor='start'; }
+      else { labelX = x0 - 8; anchor='end'; }
+
+      barsG.appendChild(el('text', {
+        x:labelX, y:y + barH/2 + 4, class:'val-label', fill:color, 'text-anchor':anchor
+      }, (isUp? '▲ +' : (isFlat ? '' : '▼ ')) + d.pct.toFixed(2) + '%・收' + d.close));
+    });
+  })();
+
+  // ---- qualitative status rows ----
+  function renderStatus(containerId, data){
+    var container = document.getElementById(containerId);
+    container.innerHTML = '';
+    data.forEach(function(r){
+      var row = document.createElement('div');
+      row.className = 'status-row';
+
+      var label = document.createElement('div');
+      label.className = 'row-label';
+      label.textContent = r.label;
+      row.appendChild(label);
+
+      var badge = document.createElement('span');
+      badge.className = 'row-badge ' + r.badge.cls;
+      badge.textContent = r.badge.text;
+      row.appendChild(badge);
+
+      var note = document.createElement('div');
+      note.className = 'row-note';
+      note.textContent = r.note;
+      row.appendChild(note);
+
+      container.appendChild(row);
+    });
+  }
+
+  renderStatus('status-list', [
+    { label:'半導體／電子（含台積電、AI供應鏈）', badge:{cls:'weak', text:'▼ 延續偏弱，跌勢趨緩'}, note:'外資賣超台積電已連續9個交易日，但今天台積電靠盤尾大單撐住收平盤，沒有繼續重摔，算是「跌勢喊卡、還沒翻多」的狀態。' },
+    { label:'航運（貨櫃為主）', badge:{cls:'watch', text:'查無今日資料'}, note:'上週受惠美中貿易休兵延長至2027年1月10日等題材，累計大漲約5.1%，是上週最強產業；今天公開資料查無具體漲跌幅報導，無法確認熱度是否延續。' },
+    { label:'金融、傳產、生技、櫃買', badge:{cls:'watch', text:'查無今日資料'}, note:'上週這些族群曾有輪動表現，但今天公開搜尋未找到個別漲跌幅報導，暫不評論方向，避免編造數字。' }
+  ]);
+})();
+</script>
