@@ -8,6 +8,7 @@
 - `CLAUDE.md` — 給 Claude 的操作說明（手機下指令管理清單用）
 - `reports/` — 每次執行產出的產業趨勢報告（Markdown），檔名格式 `YYYY-MM-DD-sector-trend.md`
 - `reports/latest.md` — 最新一份報告的複本，方便快速查看
+- `ptt_ticket_bot/` — PTT KoreaDrama 售票文 WhatsApp 通知機器人（說明見該資料夾 README）
 
 ## 觀察清單分類
 
