@@ -1,0 +1,429 @@
+<title>台股產業趨勢儀表板</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* layout: hero (one-line summary) -> caveat card -> stat tiles (confirmed week-to-date figures) -> daily % bar chart (11/2-11/4 + weekly cumulative) -> sector status board (honest: no confirmed winner this week) -> watchlist cards -> footnotes */
+:root{
+  --bg:#f7f5ef;
+  --surface:#ffffff;
+  --surface-2:#fcfbf7;
+  --ink:#18140f;
+  --ink-2:#55514a;
+  --muted:#8a8578;
+  --border:rgba(24,20,15,0.12);
+  --grid:#e6e1d4;
+  --accent:#a6690c;
+  --accent-soft:#f1e2c4;
+  --up:#e34948;
+  --up-soft:#fbe3e2;
+  --down:#008300;
+  --down-soft:#dff2df;
+  --neutral:#8a8578;
+  --font-display:"Noto Serif TC", "Source Han Serif TC", serif;
+  --font-body:"Noto Sans TC", "Source Han Sans TC", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#111009;
+    --surface:#1b1912;
+    --surface-2:#1f1d15;
+    --ink:#f3efe4;
+    --ink-2:#c7c1b2;
+    --muted:#8f897a;
+    --border:rgba(255,255,255,0.12);
+    --grid:#312e22;
+    --accent:#e0a526;
+    --accent-soft:#3a2e13;
+    --up:#e66767;
+    --up-soft:#3a1f1e;
+    --down:#1fae1f;
+    --down-soft:#163516;
+    --neutral:#8f897a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111009;
+  --surface:#1b1912;
+  --surface-2:#1f1d15;
+  --ink:#f3efe4;
+  --ink-2:#c7c1b2;
+  --muted:#8f897a;
+  --border:rgba(255,255,255,0.12);
+  --grid:#312e22;
+  --accent:#e0a526;
+  --accent-soft:#3a2e13;
+  --up:#e66767;
+  --up-soft:#3a1f1e;
+  --down:#1fae1f;
+  --down-soft:#163516;
+  --neutral:#8f897a;
+  color-scheme: dark;
+}
+
+*{box-sizing:border-box;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:28px;
+  max-width:880px;
+  margin:0 auto;
+}
+h1,h2,h3{font-family:var(--font-display); text-wrap:balance; margin:0;}
+p{margin:0;}
+.tabular{font-variant-numeric:tabular-nums;}
+
+.hero{
+  background:linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:26px 22px;
+  margin-bottom:22px;
+}
+.hero-eyebrow{
+  display:flex; align-items:center; gap:10px;
+  color:var(--accent); font-size:12.5px; letter-spacing:0.12em; font-weight:700;
+  text-transform:uppercase; margin-bottom:14px;
+}
+.hero-eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--down);box-shadow:0 0 0 3px var(--border);}
+.hero h1{font-size:clamp(20px, 4.4vw, 28px); line-height:1.55; font-weight:600; color:var(--ink);}
+.hero h1 b{color:var(--accent); font-weight:700;}
+.hero h1 b.up{color:var(--up);}
+.hero h1 b.down{color:var(--down);}
+.hero-meta{
+  margin-top:16px; display:flex; flex-wrap:wrap; gap:8px 18px;
+  color:var(--ink-2); font-size:12.5px;
+}
+.hero-meta span b{color:var(--ink); font-weight:600;}
+
+section{margin-bottom:26px;}
+.section-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:12px; flex-wrap:wrap;}
+.section-head h2{font-size:16.5px; font-weight:700; color:var(--ink);}
+.section-head .section-sub{font-size:12px; color:var(--muted);}
+.card{
+  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  padding:18px 16px;
+}
+
+.caveat{
+  display:flex; gap:8px; align-items:flex-start; background:var(--accent-soft);
+  border-radius:10px; padding:10px 12px; font-size:12px; color:var(--ink-2); line-height:1.6;
+  margin-bottom:0;
+}
+.caveat b{color:var(--accent);}
+
+.tile-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
+@media (max-width:620px){ .tile-grid{grid-template-columns:repeat(2,1fr);} }
+.tile{
+  background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  padding:14px; min-width:0;
+}
+.tile .t-label{font-size:11px; color:var(--muted); font-weight:600; letter-spacing:0.02em; margin-bottom:6px;}
+.tile .t-value{font-size:19px; font-weight:700; color:var(--ink); line-height:1.3;}
+.tile .t-value.up{color:var(--up);} .tile .t-value.down{color:var(--down);} .tile .t-value.flat{color:var(--muted);}
+.tile .t-sub{font-size:11px; color:var(--muted); margin-top:4px; line-height:1.5;}
+
+.legend{display:flex; gap:18px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-2); margin-bottom:16px;}
+.legend-item{display:flex; align-items:center; gap:6px;}
+.legend-swatch{width:12px;height:12px;border-radius:3px;}
+.legend-swatch.hl{width:12px;height:12px;border-radius:3px;border:2px solid var(--accent); background:none;}
+.legend-swatch.ghost{width:12px;height:12px;border-radius:3px;border:1.5px dashed var(--muted); background:none;}
+
+.chart-wrap{overflow-x:auto;}
+.chart-svg{display:block; width:100%; min-width:460px;}
+.chart-svg text{font-family:var(--font-body); fill:var(--ink-2);}
+.chart-svg .axis-label{font-size:11px; fill:var(--muted);}
+.chart-svg .row-name{font-size:13px; font-weight:700; fill:var(--ink);}
+.chart-svg .row-sub{font-size:10.5px; fill:var(--muted);}
+.chart-svg .val-label{font-size:12.5px; font-weight:700; font-variant-numeric:tabular-nums;}
+.chart-svg .grid-line{stroke:var(--grid); stroke-width:1;}
+.chart-svg .zero-line{stroke:var(--muted); stroke-width:1.2;}
+
+.status-list{display:flex; flex-direction:column; gap:12px;}
+.status-row{
+  display:grid; grid-template-columns:190px auto 1fr; gap:10px 14px; align-items:start;
+  padding-bottom:12px; border-bottom:1px solid var(--grid);
+}
+.status-row:last-child{border-bottom:none; padding-bottom:0;}
+@media (max-width:560px){
+  .status-row{grid-template-columns:1fr; gap:6px;}
+}
+.row-label{font-size:13.5px; font-weight:700; color:var(--ink); padding-top:3px;}
+.row-badge{
+  font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px;
+  letter-spacing:0.02em; white-space:nowrap; height:fit-content; display:inline-flex; align-items:center; gap:4px;
+}
+.row-badge.strong{background:var(--up-soft); color:var(--up);}
+.row-badge.weak{background:var(--down-soft); color:var(--down);}
+.row-badge.watch{background:var(--surface-2); color:var(--muted); border:1px solid var(--grid);}
+.row-note{font-size:12.5px; color:var(--ink-2); line-height:1.65;}
+
+.watch-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px;}
+@media (max-width:560px){ .watch-grid{grid-template-columns:1fr;} }
+.watch-card{
+  background:var(--surface); border:1px solid var(--border); border-radius:14px;
+  padding:14px; min-width:0;
+}
+.watch-card .wc-top{display:flex; justify-content:space-between; align-items:baseline; gap:8px; margin-bottom:6px;}
+.watch-card .wc-code{font-size:12px; color:var(--muted); font-weight:600;}
+.watch-card .wc-name{font-size:14.5px; font-weight:700; color:var(--ink);}
+.watch-card .wc-cat{font-size:11px; color:var(--accent); margin-bottom:8px; font-weight:600;}
+.watch-card .wc-stat{display:flex; align-items:baseline; gap:8px; margin-bottom:8px; flex-wrap:wrap;}
+.watch-card .wc-stat .v{font-size:16px; font-weight:700; color:var(--ink);}
+.watch-card .wc-stat .v.up{color:var(--up);} .watch-card .wc-stat .v.down{color:var(--down);} .watch-card .wc-stat .v.flat{color:var(--muted);}
+.watch-card .wc-stat .l{font-size:11.5px; color:var(--muted);}
+.watch-card .wc-note{font-size:12px; color:var(--ink-2); line-height:1.55;}
+
+footer{
+  font-size:11.5px; color:var(--muted); line-height:1.7; border-top:1px solid var(--border);
+  padding-top:14px; margin-top:8px;
+}
+footer p + p{margin-top:6px;}
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@500;600;700&display=swap">
+
+<div class="hero">
+  <div class="hero-eyebrow"><span class="dot"></span>台股產業趨勢・本週第3個交易日（週三）・連3天收黑、外資史上級賣壓</div>
+  <h1>這週（11/2～11/4）台股像坐上失速的溜滑梯，三天合計重摔<b class="down">2,262.92點（-5.00%）</b>，是近期少見的連續重挫週。領跌主角是<b class="down">半導體／AI概念股</b>（台積電、聯發科為代表），外資今天（11/4）賣超金額創下<b class="down">史上第5大單日紀錄</b>，資金幾乎找不到真正安全的角落；多虧投信逆勢進場護盤，加上尾盤買氣湧入，指數才在今天盤中殺到41,855點後拉回、守住4萬2千點關卡。</h1>
+  <div class="hero-meta">
+    <span>本週累計（11/2～11/4，3天）：<b class="tabular" style="color:var(--down)">▼2,262.92點・-5.00%</b></span>
+    <span>11/4（今天）收盤：<b class="tabular" style="color:var(--down)">42,948.91點</b></span>
+    <span>本週目前最弱：<b style="color:var(--down)">半導體／AI概念股</b></span>
+    <span>本週目前最強：<b style="color:var(--ink-2)">查無產業收紅，投信護盤為主要支撐</b></span>
+  </div>
+</div>
+
+<section>
+  <div class="caveat">
+    <span>⚠️</span>
+    <span><b>資料限制說明：</b>本頁產出時間為2026-11-04（台北時間）週三收盤後，涵蓋本週前3個交易日（11/2～11/4）。公開搜尋確認了這3天加權指數逐日收盤、漲跌點數、三大法人買賣超、台積電逐日收盤價等數字。但半導體、金融、航運、生技等「產業指數」本週逐日精確漲跌幅，以及00631L、00663L、00685L（正2槓桿ETF）、00981A（主動式ETF）本週的收盤價或淨值，公開搜尋查無完整可靠數字，頁面中如實標示「查無資料」，不編造精確數字。本週才走到週三，後面兩天走勢仍可能大幅翻轉。</span>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>本週目前：重點數字</h2>
+    <span class="section-sub">本週前3個交易日：11/2（一）～11/4（三，今天）</span>
+  </div>
+  <div class="tile-grid">
+    <div class="tile">
+      <div class="t-label">本週累計（以上週五10/30收盤為基準）</div>
+      <div class="t-value down tabular">▼2,262.92點</div>
+      <div class="t-sub">-5.00%，連續3個交易日收黑</div>
+    </div>
+    <div class="tile">
+      <div class="t-label">11/4（今天）收盤</div>
+      <div class="t-value down tabular">42,948.91</div>
+      <div class="t-sub">▼358.63點（-0.83%），盤中低點41,855.82，震盪1,885.72點</div>
+    </div>
+    <div class="tile">
+      <div class="t-label">本週目前最弱：半導體／AI概念股</div>
+      <div class="t-value down">持續重挫</div>
+      <div class="t-sub">台積電3天累計跌70元（約-3%），外資連5天賣超</div>
+    </div>
+    <div class="tile">
+      <div class="t-label">台積電（2330）今天收盤</div>
+      <div class="t-value down tabular">2,260元</div>
+      <div class="t-sub">▼35元（-1.53%）；本週3天累計▼70元（約-3.00%）</div>
+    </div>
+    <div class="tile">
+      <div class="t-label">外資今天賣超</div>
+      <div class="t-value down tabular">▼1,498.99億元</div>
+      <div class="t-sub">史上第5大單日外資賣超，已連續賣超5個交易日</div>
+    </div>
+    <div class="tile">
+      <div class="t-label">投信今天買超</div>
+      <div class="t-value up tabular">▲276億元</div>
+      <div class="t-sub">逆勢進場護盤，是目前市場少數的穩定力量</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>本週逐日走勢：加權指數與台積電</h2>
+    <span class="section-sub">紅＝漲，綠＝跌（台股慣例）・金框＝本週累計</span>
+  </div>
+  <div class="card">
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--up)"></span>▲ 上漲</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:var(--down)"></span>▼ 下跌</div>
+      <div class="legend-item"><span class="legend-swatch hl"></span>本週累計（3天合計）</div>
+    </div>
+    <div class="chart-wrap">
+      <svg class="chart-svg" viewBox="0 0 760 320" preserveAspectRatio="xMinYMin meet" role="img" aria-label="本週逐日漲跌幅：11/2下跌0.65%，11/3下跌3.59%為史上第7大單日跌點，11/4下跌0.83%，本週累計下跌5.00%；台積電本週3天累計下跌約3.00%">
+        <g id="gridlines"></g>
+        <g id="zeroline"></g>
+        <g id="bars"></g>
+      </svg>
+    </div>
+    <div style="margin-top:4px; font-size:11px; color:var(--muted);">加權指數為當日相對前一交易日收盤之漲跌幅；「本週累計」為11/2～11/4三天合計、相對上週五（10/30）收盤45,211.83點之漲跌幅；台積電（2330）為本週3個交易日（11/2～11/4）累計價格變動。半導體、金融、航運、生技等產業指數本週逐日精確漲跌幅公開搜尋查無可靠數字，故圖中未納入。</div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>各產業本週動向</h2>
+    <span class="section-sub">半導體／AI概念股本週目前最弱（外資史上級賣壓）・本週尚無產業確認收紅</span>
+  </div>
+  <div class="card">
+    <div class="status-list" id="status-list"></div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>觀察清單標的</h2>
+    <span class="section-sub">watchlist.txt 分類</span>
+  </div>
+  <div class="watch-grid">
+    <div class="watch-card">
+      <div class="wc-top"><span class="wc-name">台積電</span><span class="wc-code tabular">2330</span></div>
+      <div class="wc-cat">半導體個股</div>
+      <div class="wc-stat"><span class="v down tabular">2,260元（11/4）</span><span class="l">▼35元（-1.53%）・本週3天累計▼70元</span></div>
+      <div class="wc-note">本週連跌3天：11/2收2,330元、11/3收2,295元、11/4收2,260元，3天累計跌幅約3%，是本週目前表現最弱的觀察標的，與大盤「半導體領跌」的劇本完全同步。外資連續多日大舉賣超（今天賣超金額創史上第5大紀錄），加上美股半導體與AI股評價修正的外部衝擊，是主要壓力來源；這反映的是市場資金流向與氣氛，並非公司基本面出問題，但身為台股市值最大的權值股，波動容易被放大。</div>
+    </div>
+    <div class="watch-card">
+      <div class="wc-top"><span class="wc-name">元大台灣50正2</span><span class="wc-code tabular">00631L</span></div>
+      <div class="wc-cat">大盤槓桿 ETF（正2，追蹤大盤兩倍、漲跌都放大）</div>
+      <div class="wc-stat"><span class="v flat tabular">本週收盤查無資料</span><span class="l">估算：隨大盤2倍放大，約-9～-10%</span></div>
+      <div class="wc-note">這三檔正2 ETF的特性是「大盤漲它們理論上漲更多、跌也跌更多」，像用放大鏡看大盤。本週大盤累計下跌5.00%，若單純乘以二粗估，跌幅可能落在9～10%左右，但這只是推算，並非查證到的數字。槓桿型ETF每天重算兩倍曝險（俗稱「槓桿耗損」），加上這3天大盤劇烈來回震盪（11/4單日高低就震盪近1,886點），這種劇烈震盪通常會讓實際淨值比單純乘以二更差，比較適合短期操作，不建議當作長期穩定存股的工具。</div>
+    </div>
+    <div class="watch-card">
+      <div class="wc-top"><span class="wc-name">國泰臺灣加權正2</span><span class="wc-code tabular">00663L</span></div>
+      <div class="wc-cat">大盤槓桿 ETF（正2）</div>
+      <div class="wc-stat"><span class="v flat tabular">本週收盤查無資料</span><span class="l">估算：隨大盤2倍放大，約-9～-10%</span></div>
+      <div class="wc-note">同為正2槓桿商品，方向與另外兩檔一致。本週連3天收黑、波動劇烈，對這種兩倍放大鏡工具的持有人來說體感波動會更劇烈，實際數字受每日計算方式與追蹤誤差影響，公開資料查無精確數字。</div>
+    </div>
+    <div class="watch-card">
+      <div class="wc-top"><span class="wc-name">群益臺灣加權正2</span><span class="wc-code tabular">00685L</span></div>
+      <div class="wc-cat">大盤槓桿 ETF（正2）</div>
+      <div class="wc-stat"><span class="v flat tabular">本週收盤查無資料</span><span class="l">估算：隨大盤2倍放大，約-9～-10%</span></div>
+      <div class="wc-note">漲的時候用兩倍速度漲，跌的時候也用兩倍速度跌。本週大盤連續重挫，理論上這檔波動感受也會被放大，公開資料查無精確數字。提醒：00685L已於2026年7月完成1比24股票分割，分割後價格不能跟分割前直接比較。</div>
+    </div>
+    <div class="watch-card" style="grid-column:1 / -1;">
+      <div class="wc-name" style="margin-bottom:6px;">統一台股增長主動式ETF <span class="wc-code tabular">00981A</span></div>
+      <div class="wc-cat">主動式台股 ETF（經理人主動選股，不是照指數買）</div>
+      <div class="wc-stat"><span class="v flat tabular">本週最新淨值查無資料</span><span class="l">持股歷來集中於台積電等半導體／AI供應鏈股票</span></div>
+      <div class="wc-note">由基金經理人主動挑股票、不是照指數買，持股歷來集中在台積電、台光電、智邦等半導體與AI伺服器供應鏈股票。本週半導體、AI概念股普遍重挫，若這檔基金目前仍重倉這些股票，邏輯上本週淨值很可能同樣承壓，但公開搜尋查不到00981A本週逐日最新的淨值或市價，無法提供精確數字。過去曾有「逆勢抗跌」的報導，但那些資料時間點較舊，不能直接套用到這週，請勿把舊資料當作本週的實際表現，過去績效也不代表未來表現。</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p><b>資料來源：</b>11/2加權指數開盤、盤中低點、收盤、三大法人與外資買賣超、台積電收盤價——聯合新聞網（udn.com/news/story/7251/9851113）、東森新聞（eracom.com.tw/EraNews/Home/Finance/2026-11-02/2513305.html）、風傳媒（storm.mg/article/11177895）；11/3加權指數收盤、史上第7大跌點、台積電收盤價、新台幣貶值與停損賣壓分析——聯合新聞網（udn.com/news/story/7251/9854275）、中時新聞網（chinatimes.com/realtimenews/20261103002771-260410）、ETtoday（finance.ettoday.net/news/3265547）；11/4加權指數開盤、盤中高低點、收盤、台積電收盤價、外資史上第5大賣超、投信買超、尾盤漲停家數——Yahoo股市盤後焦點、ETtoday（finance.ettoday.net/news/3266263）、今周刊（businesstoday.com.tw/article/category/183008/post/202611040032/）、工商時報（ctee.com.tw/news/20261104700600-430201）、newtalk（newtalk.tw/news/view/2026-11-04/1069268）。</p>
+  <p><b>資料限制：</b>半導體、金融、航運、生技醫療等「產業指數」本週逐日的精確漲跌幅，以及00631L、00663L、00685L（正2槓桿ETF）、00981A（主動式ETF）本週確切收盤價或淨值，公開搜尋均未能查得可靠數字，頁面中如實標註「查無資料」或理論推算並明確標示為估算，不編造精確數字。本頁僅為公開資訊整理與白話解讀，不構成投資建議。</p>
+  <p><b>產出時間：</b>2026-11-04（台北時間）・完整版文字報告見 reports/2026-11-04-sector-trend.md</p>
+</footer>
+
+<script>
+(function(){
+  var svgNS = "http://www.w3.org/2000/svg";
+  function el(tag, attrs, text){
+    var e = document.createElementNS(svgNS, tag);
+    for (var k in attrs){ e.setAttribute(k, attrs[k]); }
+    if (text !== undefined){ e.textContent = text; }
+    return e;
+  }
+
+  (function(){
+    var svg = document.querySelector('.chart-svg');
+    var left = 170, right = 60, top = 16, bottom = 26;
+    var w = 760 - left - right;
+    var domainMin = -6, domainMax = 2;
+    function xForVal(v){ return left + (v - domainMin) / (domainMax - domainMin) * w; }
+    var zeroX = xForVal(0);
+
+    var ticks = [-6, -5, -4, -3, -2, -1, 0, 1, 2];
+    var gridG = document.getElementById('gridlines');
+    var chartTop = top, chartBottom = top + 230;
+    ticks.forEach(function(t){
+      var x = xForVal(t);
+      gridG.appendChild(el('line', {x1:x, x2:x, y1:chartTop, y2:chartBottom, class:'grid-line'}));
+      gridG.appendChild(el('text', {x:x, y:chartBottom+14, class:'axis-label', 'text-anchor':'middle'}, t + '%'));
+    });
+    document.getElementById('zeroline').appendChild(
+      el('line', {x1:zeroX, x2:zeroX, y1:chartTop-4, y2:chartBottom+4, class:'zero-line'})
+    );
+
+    var rows = [
+      { name:'本週累計（11/2～11/4）', sub:'相對上週五10/30收盤', pct:-5.00, hl:'strong' },
+      { name:'加權指數 11/4（週三）', sub:'相對11/3收盤', pct:-0.83, hl:false },
+      { name:'加權指數 11/3（週二）', sub:'相對11/2收盤・史上第7大跌點', pct:-3.59, hl:'weak' },
+      { name:'加權指數 11/2（週一）', sub:'相對上週五10/30收盤', pct:-0.65, hl:false },
+      { name:'台積電（2330）本週累計', sub:'11/2～11/4，3天合計', pct:-3.00, hl:false }
+    ];
+
+    var barsG = document.getElementById('bars');
+    var rowH = 42, barH = 22;
+    rows.forEach(function(d, i){
+      var y = chartTop + 4 + i * rowH;
+
+      barsG.appendChild(el('text', {
+        x: left - 12, y: y + barH/2 + 1, class:'row-name', 'text-anchor':'end', fill: d.hl ? 'var(--accent)' : 'var(--ink)'
+      }, d.name));
+      barsG.appendChild(el('text', {
+        x: left - 12, y: y + barH/2 + 14, class:'row-sub', 'text-anchor':'end'
+      }, d.sub));
+
+      var isUp = d.pct > 0;
+      var color = isUp ? 'var(--up)' : 'var(--down)';
+      var x0 = Math.min(zeroX, xForVal(d.pct));
+      var x1 = Math.max(zeroX, xForVal(d.pct));
+      var barW = Math.max(x1-x0,3);
+      var barX = x0;
+
+      barsG.appendChild(el('rect', {
+        x:barX, y:y, width:barW, height:barH, rx:4, fill:color,
+        stroke: d.hl ? 'var(--accent)' : 'none', 'stroke-width': d.hl ? 2 : 0
+      }));
+
+      var labelX, anchor;
+      if (isUp){ labelX = x1 + 8; anchor='start'; }
+      else { labelX = x0 - 8; anchor='end'; }
+
+      var labelText = (isUp? '▲ +' : '▼ ') + Math.abs(d.pct).toFixed(2) + '%' + (d.hl === 'strong' ? '・本週累計' : (d.hl === 'weak' ? '・史上第7大跌點' : ''));
+
+      barsG.appendChild(el('text', {
+        x:labelX, y:y + barH/2 + 4, class:'val-label', fill:color, 'text-anchor':anchor
+      }, labelText));
+    });
+  })();
+
+  function renderStatus(containerId, data){
+    var container = document.getElementById(containerId);
+    container.innerHTML = '';
+    data.forEach(function(r){
+      var row = document.createElement('div');
+      row.className = 'status-row';
+
+      var label = document.createElement('div');
+      label.className = 'row-label';
+      label.textContent = r.label;
+      row.appendChild(label);
+
+      var badge = document.createElement('span');
+      badge.className = 'row-badge ' + r.badge.cls;
+      badge.textContent = r.badge.text;
+      row.appendChild(badge);
+
+      var note = document.createElement('div');
+      note.className = 'row-note';
+      note.textContent = r.note;
+      row.appendChild(note);
+
+      container.appendChild(row);
+    });
+  }
+
+  renderStatus('status-list', [
+    { label:'半導體、電子（AI概念股）', badge:{cls:'weak', text:'▼ 本週目前最弱・外資史上級賣壓'}, note:'台積電本週3天連跌、累計約-3%，聯發科、聯電同步承壓。背後原因是美股科技股評價修正、市場開始質疑AI資本支出能否順利變成實際獲利，加上美國期中選舉開票的不確定性，疊加外資連續多日大舉賣超（11/4賣超創史上第5大單日紀錄，已連賣5個交易日），資金信心這週明顯動搖。新台幣盤中貶值又進一步觸發停損性賣壓，形成「股匯雙殺」。' },
+    { label:'投信（本土基金）逆勢買超', badge:{cls:'strong', text:'目前市場少數穩定力量'}, note:'與過去常見「某個題材股逆勢大漲」不同，這週公開搜尋找不到任何產業指數出現正報酬的可靠數字，是一週「全面挨打、沒有真正避風港」的罕見局面。相對而言，投信持續逆勢買超（11/4單日買超約276億元），加上11/4尾盤有49檔個股反彈攻上漲停，顯示有資金趁股價跌深時進場「逢低承接」，但這比較像跌深反彈、搶短的資金行為，目前看不出集中在哪個特定產業，也不足以扭轉整週跌勢。' },
+    { label:'金融、航運、生技、傳產等', badge:{cls:'watch', text:'查無本週逐日完整數字'}, note:'公開搜尋目前找不到這些產業指數本週（11/2～11/4）逐日明確的漲跌幅報導，暫不評論方向，避免編造數字。11/2當天金融保險類指數曾下跌1%、與半導體同步走弱，但11/3、11/4後續是否延續尚無可靠數字確認。' }
+  ]);
+})();
+</script>
