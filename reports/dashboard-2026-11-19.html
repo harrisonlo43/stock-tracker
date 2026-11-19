@@ -1,0 +1,345 @@
+<title>台股產業趨勢儀表板</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+/* layout: hero → daily-swing bars → same-day sector breakdown → finance-vs-electronics tornado bar → sector cards → watchlist → sources */
+:root{
+  --bg:#faf9f6; --surface:#ffffff; --surface-2:#f1efe9; --border:#e4e1d8;
+  --ink:#1c1b19; --ink-2:#56534c; --ink-3:#8c887e;
+  --accent:#2563eb; --accent-soft:#e8eefd;
+  --up:#dc2626; --up-soft:#fce8e7; --down:#0d9488; --down-soft:#e3f3f1; --neutral:#9b968a; --neutral-soft:#edece6;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#171613; --surface:#201f1b; --surface-2:#282621; --border:#3a3730;
+    --ink:#f3f1ea; --ink-2:#c3c0b5; --ink-3:#8f8c81;
+    --accent:#7aa2f7; --accent-soft:#233047;
+    --up:#f0605a; --up-soft:#3a2220; --down:#2dd4bf; --down-soft:#173330; --neutral:#9b968a; --neutral-soft:#2c2a25;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#171613; --surface:#201f1b; --surface-2:#282621; --border:#3a3730;
+  --ink:#f3f1ea; --ink-2:#c3c0b5; --ink-3:#8f8c81;
+  --accent:#7aa2f7; --accent-soft:#233047;
+  --up:#f0605a; --up-soft:#3a2220; --down:#2dd4bf; --down-soft:#173330; --neutral:#9b968a; --neutral-soft:#2c2a25;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Inter",-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+}
+h1,h2,h3,.num-font{font-family:"Space Grotesk","Inter",sans-serif}
+.tnum{font-variant-numeric:tabular-nums}
+.page{max-width:820px; margin:0 auto; padding-block:28px 56px; display:flex; flex-direction:column; gap:40px}
+
+/* ---------- hero ---------- */
+.hero{display:flex; flex-direction:column; gap:18px}
+.eyebrow{font-size:13px; font-weight:600; letter-spacing:.06em; color:var(--accent); text-transform:uppercase}
+.headline{font-size:clamp(22px,5vw,32px); line-height:1.45; font-weight:700; margin:0; text-wrap:balance}
+.subhead{font-size:15px; line-height:1.8; color:var(--ink-2); margin:0; max-width:68ch}
+.data-note{font-size:12.5px; line-height:1.7; color:var(--ink-3); background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:12px 14px}
+.data-note b{color:var(--ink-2)}
+
+.kpi-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px}
+.kpi-tile{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 16px; display:flex; flex-direction:column; gap:6px; min-width:0}
+.kpi-label{font-size:12px; color:var(--ink-3); font-weight:500}
+.kpi-value{font-size:22px; font-weight:700; display:flex; align-items:baseline; gap:6px; flex-wrap:wrap}
+.kpi-value.up{color:var(--up)} .kpi-value.down{color:var(--down)} .kpi-value.neutral{color:var(--ink)}
+.kpi-sub{font-size:12px; color:var(--ink-3); line-height:1.5}
+.chip{font-size:13px; font-weight:600; padding:3px 9px; border-radius:999px}
+.chip.up-chip{color:var(--up); background:var(--up-soft)}
+.chip.down-chip{color:var(--down); background:var(--down-soft)}
+.chip.neutral-chip{color:var(--ink-2); background:var(--neutral-soft)}
+
+/* ---------- sections ---------- */
+section{display:flex; flex-direction:column; gap:14px; min-width:0}
+.sec-head{display:flex; flex-direction:column; gap:4px}
+.sec-head h2{font-size:18px; margin:0; font-weight:700}
+.sec-sub{font-size:13px; color:var(--ink-3)}
+.card-box{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; min-width:0}
+
+/* legend */
+.legend{display:flex; gap:16px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-2)}
+.legend span{display:inline-flex; align-items:center; gap:6px}
+.legend i{width:10px; height:10px; border-radius:3px; display:inline-block}
+
+/* ---------- chart 1: daily swing (diverging vertical bars) ---------- */
+.daily-chart{display:flex; align-items:stretch; gap:4px; margin-top:26px}
+.daily-col{flex:1; display:flex; flex-direction:column; min-width:0}
+.daily-col .zone-up{height:46px; display:flex; align-items:flex-end; justify-content:center; position:relative}
+.daily-col .zone-down{height:168px; margin-bottom:18px; display:flex; align-items:flex-start; justify-content:center; position:relative; border-top:1px solid var(--border)}
+.daily-bar{width:60%; max-width:54px; border-radius:5px 5px 0 0; position:relative}
+.daily-bar.flip{border-radius:0 0 5px 5px}
+.daily-bar .val{position:absolute; left:50%; transform:translateX(-50%); font-size:12px; font-weight:700; white-space:nowrap}
+.zone-up .val{bottom:calc(100% + 4px)}
+.zone-down .val{top:calc(100% + 4px)}
+.daily-col .day-label{text-align:center; font-size:12px; color:var(--ink-2); margin-top:10px; font-weight:600}
+.daily-col .day-date{text-align:center; font-size:10.5px; color:var(--ink-3)}
+
+/* ---------- chart 2 & 3: horizontal bars ---------- */
+.hbar-row{display:flex; align-items:center; gap:12px; padding:9px 0}
+.hbar-label{width:112px; min-width:112px; font-size:13px; color:var(--ink-2); font-weight:600; text-align:right}
+.hbar-track{flex:1; background:var(--surface-2); border-radius:6px; height:26px; position:relative; min-width:0}
+.hbar-fill{height:100%; border-radius:6px; display:flex; align-items:center}
+.hbar-fill .val{font-size:12.5px; font-weight:700; color:#fff; padding:0 8px; white-space:nowrap}
+.hbar-fill.pale .val{color:var(--ink)}
+
+/* tornado (diverging two-sided) chart for 11/17 */
+.tornado{display:flex; flex-direction:column; gap:14px}
+.tornado-row{display:grid; grid-template-columns:72px 1fr 2px 1fr 72px; align-items:center; gap:8px; min-width:0}
+.tornado-val{font-size:13px; font-weight:700; white-space:nowrap}
+.tornado-val.left{text-align:right}
+.tornado-val.right{text-align:left}
+.tornado-track{height:26px; display:flex; min-width:0; background:var(--surface-2); border-radius:6px}
+.tornado-track.left{justify-content:flex-end}
+.tornado-track.right{justify-content:flex-start}
+.tornado-bar{height:100%; border-radius:6px}
+.tornado-axis{background:var(--border); align-self:stretch}
+.tornado-names{display:grid; grid-template-columns:72px 1fr 2px 1fr 72px; gap:8px; font-size:12.5px; color:var(--ink-3)}
+.tornado-names span:nth-child(2){text-align:right} .tornado-names span:nth-child(4){text-align:left}
+
+table.data-table{width:100%; border-collapse:collapse; font-size:12.5px; margin-top:4px}
+table.data-table th, table.data-table td{text-align:right; padding:6px 8px; border-bottom:1px solid var(--border); color:var(--ink-2)}
+table.data-table th:first-child, table.data-table td:first-child{text-align:left; color:var(--ink)}
+details.table-toggle summary{cursor:pointer; font-size:12.5px; color:var(--accent); font-weight:600; list-style:none; display:inline-flex; align-items:center; gap:4px; margin-top:2px}
+details.table-toggle summary::-webkit-details-marker{display:none}
+details.table-toggle summary::before{content:"▸"; font-size:10px}
+details.table-toggle[open] summary::before{content:"▾"}
+details.table-toggle .table-wrap{overflow-x:auto; margin-top:8px}
+
+/* ---------- sector cards ---------- */
+.sector-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px}
+.sector-card{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:18px; display:flex; flex-direction:column; gap:10px; min-width:0}
+.sector-card .badge{align-self:flex-start; font-size:11.5px; font-weight:700; letter-spacing:.03em; padding:3px 10px; border-radius:999px}
+.badge.weakest{color:var(--down); background:var(--down-soft)}
+.badge.strongest{color:var(--up); background:var(--up-soft)}
+.badge.unknown{color:var(--ink-2); background:var(--neutral-soft)}
+.sector-card h3{margin:0; font-size:16px}
+.sector-card p{margin:0; font-size:13.5px; line-height:1.75; color:var(--ink-2)}
+.sector-card .evidence{font-size:12px; color:var(--ink-3); line-height:1.6; border-top:1px dashed var(--border); padding-top:8px}
+
+/* ---------- watchlist ---------- */
+.watch-list{display:flex; flex-direction:column; gap:10px}
+.watch-item{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 16px; display:flex; flex-direction:column; gap:6px; min-width:0}
+.watch-top{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap}
+.watch-name{font-weight:700; font-size:14.5px}
+.watch-cat{font-size:11.5px; color:var(--ink-3)}
+.watch-item p{margin:0; font-size:13px; line-height:1.7; color:var(--ink-2)}
+
+footer{border-top:1px solid var(--border); padding-top:20px; display:flex; flex-direction:column; gap:8px}
+footer p{margin:0; font-size:12px; line-height:1.8; color:var(--ink-3)}
+footer a{color:var(--accent)}
+</style>
+
+<div class="page">
+
+  <header class="hero">
+    <div class="eyebrow">台股產業趨勢週報・2026年11月19日（星期四）</div>
+    <h1 class="headline">這週台股像坐雲霄飛車：連摔3天只喘一口氣，今天一口氣跌破4萬點與年線，整週重挫逾一成；半導體／記憶體／AI供應鏈傷最重，金融股相對扛得住。</h1>
+    <p class="subhead">本週（11/16～11/19）4個交易日，加權指數只有週三（11/18）小漲，其餘3天都在下跌，今天（11/19）更出現史上收盤第7大跌點，一次跌破「4萬點」整數關卡與「年線」（過去一年平均成本，跌破代表這一年買進的人平均是賠錢的）。本週目前累計大盤已重挫約<strong class="tnum">12.02%</strong>。</p>
+    <div class="data-note"><b>資料限制：</b>本頁數字以公開新聞搜尋整理而成，僅採用能查證、標註清楚日期的數字；金融、傳產、航運、生技等「產業類股指數」本週逐日精確漲跌幅，以及觀察清單中00663L、00685L、00981A本週（尤其今天）實際淨值，公開搜尋查無可靠數字，圖表中不以精確百分比呈現，只標示「資料不足」。詳見下方與完整報告。</div>
+
+    <div class="kpi-row">
+      <div class="kpi-tile">
+        <div class="kpi-label">本週累計（11/13→11/19）</div>
+        <div class="kpi-value down tnum">▼ 12.02%</div>
+        <div class="kpi-sub tnum">加權指數 43,675.12 → 38,426.89</div>
+      </div>
+      <div class="kpi-tile">
+        <div class="kpi-label">今天（11/19）收盤</div>
+        <div class="kpi-value down tnum">▼ 4.40%</div>
+        <div class="kpi-sub tnum">38,426.89點・跌1,768.02點・史上收盤第7大跌點</div>
+      </div>
+      <div class="kpi-tile">
+        <div class="kpi-label">今天跌破的關卡</div>
+        <div class="kpi-value neutral">4萬點・年線</div>
+        <div class="kpi-sub tnum">年線39,368點，代表近一年買進的人平均成本</div>
+      </div>
+      <div class="kpi-tile">
+        <div class="kpi-label">本週相對最強 / 最弱</div>
+        <div class="kpi-value"><span class="chip up-chip">金融股</span>&nbsp;vs&nbsp;<span class="chip down-chip">半導體/記憶體</span></div>
+        <div class="kpi-sub">相對表現觀察，非精確週漲跌幅</div>
+      </div>
+    </div>
+  </header>
+
+  <section>
+    <div class="sec-head">
+      <h2>本週加權指數每日表現</h2>
+      <div class="sec-sub">像雲霄飛車：重摔、再跌、小喘一口氣、又重摔</div>
+    </div>
+    <div class="card-box">
+      <div class="legend">
+        <span><i style="background:var(--up)"></i>上漲（紅）</span>
+        <span><i style="background:var(--down)"></i>下跌（綠）</span>
+      </div>
+      <div class="daily-chart">
+        <div class="daily-col">
+          <div class="zone-up"></div>
+          <div class="zone-down">
+            <div class="daily-bar" style="height:159.6px; background:var(--down)">
+              <span class="val tnum" style="color:var(--down)">-6.03%</span>
+            </div>
+          </div>
+          <div class="day-label">週一 11/16</div>
+          <div class="day-date tnum">收41,040.08</div>
+        </div>
+        <div class="daily-col">
+          <div class="zone-up"></div>
+          <div class="zone-down">
+            <div class="daily-bar" style="height:61.2px; background:var(--down)">
+              <span class="val tnum" style="color:var(--down)">-2.31%</span>
+            </div>
+          </div>
+          <div class="day-label">週二 11/17</div>
+          <div class="day-date tnum">收40,092.11</div>
+        </div>
+        <div class="daily-col">
+          <div class="zone-up">
+            <div class="daily-bar" style="height:7px; background:var(--up)">
+              <span class="val tnum" style="color:var(--up)">+0.26%</span>
+            </div>
+          </div>
+          <div class="zone-down"></div>
+          <div class="day-label">週三 11/18</div>
+          <div class="day-date tnum">收40,194.91</div>
+        </div>
+        <div class="daily-col">
+          <div class="zone-up"></div>
+          <div class="zone-down">
+            <div class="daily-bar" style="height:116.4px; background:var(--down)">
+              <span class="val tnum" style="color:var(--down)">-4.40%</span>
+            </div>
+          </div>
+          <div class="day-label">週四 11/19</div>
+          <div class="day-date tnum">收38,426.89</div>
+        </div>
+      </div>
+      <details class="table-toggle">
+        <summary>看資料表格</summary>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>日期</th><th>收盤</th><th>漲跌點</th><th>漲跌幅</th></tr></thead>
+            <tbody>
+              <tr><td>11/13（週五，基準）</td><td class="tnum">43,675.12</td><td class="tnum">—</td><td class="tnum">—</td></tr>
+              <tr><td>11/16（週一）</td><td class="tnum">41,040.08</td><td class="tnum">▼2,635.04</td><td class="tnum">-6.03%</td></tr>
+              <tr><td>11/17（週二）</td><td class="tnum">40,092.11</td><td class="tnum">▼947.97</td><td class="tnum">-2.31%</td></tr>
+              <tr><td>11/18（週三）</td><td class="tnum">40,194.91</td><td class="tnum">▲102.80</td><td class="tnum">+0.26%</td></tr>
+              <tr><td>11/19（週四）</td><td class="tnum">38,426.89</td><td class="tnum">▼1,768.02</td><td class="tnum">-4.40%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>今天（11/19）電子供應鏈跌幅比較</h2>
+      <div class="sec-sub">同一天比較：越靠近AI、記憶體，傷越重</div>
+    </div>
+    <div class="card-box">
+      <div class="hbar-row">
+        <div class="hbar-label">台積電（2330）</div>
+        <div class="hbar-track"><div class="hbar-fill" style="width:35%; background:var(--down)"><span class="val tnum">-3.45%</span></div></div>
+      </div>
+      <div class="hbar-row">
+        <div class="hbar-label">加權指數（大盤）</div>
+        <div class="hbar-track"><div class="hbar-fill" style="width:44.6%; background:var(--down)"><span class="val tnum">-4.40%</span></div></div>
+      </div>
+      <div class="hbar-row">
+        <div class="hbar-label">聯發科</div>
+        <div class="hbar-track"><div class="hbar-fill" style="width:56.6%; background:var(--down)"><span class="val tnum">-5.58%</span></div></div>
+      </div>
+      <div class="hbar-row">
+        <div class="hbar-label">晶圓材料族群</div>
+        <div class="hbar-track"><div class="hbar-fill" style="width:98.3%; background:var(--down)"><span class="val tnum">-9.69%</span></div></div>
+      </div>
+      <div class="hbar-row">
+        <div class="hbar-label">南亞科（記憶體）</div>
+        <div class="hbar-track"><div class="hbar-fill" style="width:100%; background:var(--down)"><span class="val tnum">-9.86%</span></div></div>
+      </div>
+      <p style="font-size:12px; color:var(--ink-3); margin:4px 0 0">同一天（11/19）的跌幅比較，環球晶、合晶等晶圓材料指標股同日跌停。資料不含00631L等正2 ETF（查無當日確切數字，詳見下方觀察清單）。</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>11/17 資金去哪了？金融 vs 電子</h2>
+      <div class="sec-sub">大盤重摔逾1,250點的同一天，資金轉進金融股避險</div>
+    </div>
+    <div class="card-box">
+      <div class="tornado">
+        <div class="tornado-row">
+          <span class="tornado-val left tnum" style="color:var(--down)">-2%<br>（約）</span>
+          <div class="tornado-track left"><div class="tornado-bar" style="width:28%; background:var(--down)"></div></div>
+          <div class="tornado-axis"></div>
+          <div class="tornado-track right"><div class="tornado-bar" style="width:11.9%; background:var(--up)"></div></div>
+          <span class="tornado-val right tnum" style="color:var(--up)">+0.85%</span>
+        </div>
+        <div class="tornado-names"><span></span><span>電子類股指數</span><span></span><span>金融類股指數</span><span></span></div>
+      </div>
+      <p style="font-size:12px; color:var(--ink-3); margin:12px 0 0">同一時段的相對表現：大盤當天盤中重摔逾1,250點，金融指數卻逆勢上漲，顯示資金從電子股轉進金融股避險（「電子-2%」為新聞報導中的約略描述，非精確數字，故標示「約」）。</p>
+    </div>
+  </section>
+
+  <section class="sector-grid" style="display:grid">
+    <div class="sector-card">
+      <span class="badge weakest">本週最弱</span>
+      <h3>半導體／記憶體／AI供應鏈</h3>
+      <p>這群股票過去因「AI商機」被買得很貴，現在市場開始懷疑「AI投資到底能不能賺回本」。只要信心一動搖，資金就從這裡先跑，今天晶圓材料族群單日就跌近一成，記憶體三雄全面重傷。</p>
+      <div class="evidence">證據：11/19晶圓材料族群-9.69%、南亞科-9.86%、聯發科-5.58%、台積電-3.45%，皆重於大盤同日-4.40%。</div>
+    </div>
+    <div class="sector-card">
+      <span class="badge strongest">本週相對最強</span>
+      <h3>金融股</h3>
+      <p>股息發放穩定、體質相對穩健的金融股，成為這波重摔中資金暫時停泊的「避風港」——有點像暴風雨中先找個碼頭停船，不代表大漲，只是跌得比電子股輕、甚至偶爾逆勢翻紅。</p>
+      <div class="evidence">證據：11/17金融指數+0.85%（同時電子指數約-2%）；11/12金融類ETF（0055、00713）逆勢收紅。</div>
+    </div>
+    <div class="sector-card">
+      <span class="badge unknown">資料不足</span>
+      <h3>傳產／航運／生技</h3>
+      <p>這幾個產業本週逐日精確的類股指數漲跌幅，公開搜尋查無可靠且日期明確的2026年11月數字（部分搜尋結果混入2025年舊資料），因此本頁不標示精確漲跌幅，也不編造。</p>
+      <div class="evidence">如需這幾個產業的即時數字，建議查證台灣證券交易所或櫃買中心官方收盤統計。</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <h2>觀察清單動態</h2>
+      <div class="sec-sub">依 watchlist.txt 分類</div>
+    </div>
+    <div class="watch-list">
+      <div class="watch-item">
+        <div class="watch-top"><span class="watch-name">2330 台積電</span><span class="watch-cat">半導體個股</span></div>
+        <p>本週前兩天重摔，11/18一度回神小漲，但今天（11/19）又重挫75元、收2,100元（-3.45%），本週（11/13→11/19）累計約下跌10.64%，顯示半導體修正還沒結束。</p>
+      </div>
+      <div class="watch-item">
+        <div class="watch-top"><span class="watch-name">00631L 元大台灣50正2</span><span class="watch-cat">大盤槓桿ETF（正2，追蹤大盤兩倍、漲跌都放大、波動較大）</span></div>
+        <p>查到最新淨值為11/16（非今天）27.62元，較前一交易日31.92元下跌4.30元，波動明顯大於大盤同日-6.03%的跌幅。今天（11/19）確切淨值查無資料，但大盤本週已重挫逾一成，加上槓桿每天重新計算兩倍曝險（連續震盪下耗損更大），淨值跌幅合理推斷會重於大盤，惟不編造精確數字。</p>
+      </div>
+      <div class="watch-item">
+        <div class="watch-top"><span class="watch-name">00663L／00685L</span><span class="watch-cat">大盤槓桿ETF（正2，設計邏輯同上）</span></div>
+        <p>公開搜尋查無這兩檔本週（尤其今天）確切的收盤價或淨值，不採用矛盾或舊資料，也不編造。</p>
+      </div>
+      <div class="watch-item">
+        <div class="watch-top"><span class="watch-name">00981A 統一台股增長主動式ETF</span><span class="watch-cat">主動式台股ETF（由基金經理人主動選股，不是照指數買）</span></div>
+        <p>持股集中在台積電、國巨、台光電、聯發科、智邦等半導體／AI伺服器供應鏈（前五大合計近4成），正好是這次重摔的「震央」，今天記憶體、晶圓材料重傷，對淨值衝擊推斷不小，但查無本週確切淨值數字。</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p><b>資料來源：</b>加權指數每日開高低收與漲跌——nownews.com、udn.com、uanalyze.com.tw、moneydj.com、華視新聞網（cts.com.tw）；11/19大跌原因與個股股價——udn.com、今周刊businesstoday.com.tw、中時chinatimes.com；記憶體與晶圓材料族群跌幅——inews.setn.com、ftnn.com.tw、cmoney.tw；11/17金融vs電子相對表現、00631L淨值——uanalyze.com.tw、moneydj.com。完整報告與逐條來源請見repo內 <code>reports/2026-11-19-sector-trend.md</code>。</p>
+    <p><b>限制：</b>本次環境網路存取有白名單限制，多數新聞原始頁面無法直接開啟，僅能依賴搜尋引擎摘要整理，跌停家數等細節不同媒體略有出入，已採多方一致數字；本頁僅為公開資訊整理與白話解讀，不構成投資建議。</p>
+    <p>產出時間：2026-11-19（台北時間）・台股產業趨勢週報</p>
+  </footer>
+
+</div>
